@@ -3,6 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+
+const authRouter = require('./routes/auth');
 
 /**
  * Initialize express app
@@ -36,6 +39,8 @@ app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+app.use(cookieParser());
+
 /**
  * Routes
  */
@@ -43,6 +48,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.get('/', function (req, res) {
 	res.send('Chess Game API');
 });
+app.use('/auth', authRouter);
 
 /**
  * Run HTTP server
