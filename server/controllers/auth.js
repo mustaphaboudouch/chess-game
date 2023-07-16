@@ -31,9 +31,9 @@ function clearToken(res) {
 }
 
 /**
- * Register a new user
+ * Sign up a new user
  */
-async function register(req, res) {
+async function signUp(req, res) {
 	try {
 		const user = await User.create({
 			username: req.body.username,
@@ -53,9 +53,9 @@ async function register(req, res) {
 }
 
 /**
- * Log in an existing user
+ * Sign in an existing user
  */
-async function login(req, res) {
+async function signIn(req, res) {
 	try {
 		const user = await User.findOne({ email: req.body.email }).select(
 			'+password',
@@ -75,9 +75,9 @@ async function login(req, res) {
 }
 
 /**
- * Log out logged user
+ * Sign out logged user
  */
-function logout(req, res) {
+function signOut(req, res) {
 	try {
 		clearToken(res);
 		res.status(200).end();
@@ -86,8 +86,26 @@ function logout(req, res) {
 	}
 }
 
+/**
+ * Get logged user
+ */
+async function me(req, res) {
+	try {
+		const user = await User.findById(res.locals.token.userId);
+
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		res.status(200).json(user);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
+
 module.exports = {
-	register,
-	login,
-	logout,
+	signUp,
+	signIn,
+	signOut,
+	me,
 };
