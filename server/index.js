@@ -2,12 +2,30 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 
 /**
  * Initialize express app
  */
 
 const app = express();
+
+/**
+ * MongoDB connection
+ */
+
+mongoose
+	.connect(process.env.DATABASE_URI, {
+		useNewUrlParser: true,
+		useUnifiedTopology: true,
+	})
+	.then(function () {
+		console.log('💾 Database is connected successfully');
+	})
+	.catch(function (error) {
+		console.error('❌ Database connection failed');
+		console.trace(error);
+	});
 
 /**
  * Middlewares
