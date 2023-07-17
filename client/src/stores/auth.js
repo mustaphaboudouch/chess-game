@@ -1,5 +1,5 @@
-import axios from "axios";
 import { defineStore } from "pinia";
+import axios from "../lib/axios";
 import router from "../router";
 
 export const useAuthStore = defineStore({
@@ -10,10 +10,7 @@ export const useAuthStore = defineStore({
   actions: {
     async setUser() {
       try {
-        this.isLoading = true;
-        const response = await axios.get("http://localhost:3001/me", {
-          withCredentials: true
-        });
+        const response = await axios.get("me");
         this.user = response.data;
         router.push("/");
       } catch (error) {
@@ -23,11 +20,9 @@ export const useAuthStore = defineStore({
     },
     async signUp({ username, email, password }) {
       try {
-        await axios.post(
-          "http://localhost:3001/sign-up",
-          { username, email, password },
-          { withCredentials: true }
-        );
+        const response = await axios.post("sign-up", { username, email, password });
+        localStorage.setItem("token", response.data.token);
+        this.user = response.data.user;
         router.push("/");
       } catch (error) {
         console.error(error);
@@ -35,26 +30,18 @@ export const useAuthStore = defineStore({
     },
     async signIn({ email, password }) {
       try {
-        await axios.post(
-          "http://localhost:3001/sign-in",
-          { email, password },
-          { withCredentials: true }
-        );
+        const response = await axios.post("sign-in", { email, password });
+        localStorage.setItem("token", response.data.token);
+        this.user = response.data.user;
         router.push("/");
       } catch (error) {
         console.error(error);
       }
     },
-    async signOut() {
-      try {
-        await axios.post("http://localhost:3001/sign-out", {
-          withCredentials: true
-        });
-        this.user = null;
-        router.push("/sign-in");
-      } catch (error) {
-        console.error(error);
-      }
+    signOut() {
+      localStorage.removeItem("token");
+      this.user = null;
+      router.push("/sign-in");
     }
   }
 });
