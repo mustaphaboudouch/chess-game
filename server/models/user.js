@@ -29,6 +29,12 @@ const userSchema = mongoose.Schema({
 		min: [0, 'Score must be greater than or equal to 0'],
 		default: 0,
 	},
+
+	// Stripe fields
+	stripeCustomerId: { type: String, required: false },
+	stripeSubscriptionId: { type: String, required: false },
+	stripePriceId: { type: String, required: false },
+	stripeCurrentPeriodEnd: { type: Date, required: false },
 });
 
 module.exports = mongoose.model('User', userSchema);
