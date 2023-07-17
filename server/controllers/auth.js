@@ -19,17 +19,6 @@ function setToken(res, token) {
 	});
 }
 
-function clearToken(res) {
-	res.cookie(process.env.TOKEN_COOKIE_NAME, '', {
-		httpOnly: true,
-		secure: process.env.NODE_ENV === 'production',
-		sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-		domain: 'localhost',
-		path: '/',
-		maxAge: 0,
-	});
-}
-
 /**
  * Sign up a new user
  */
@@ -79,7 +68,7 @@ async function signIn(req, res) {
  */
 function signOut(req, res) {
 	try {
-		clearToken(res);
+		res.clearCookie(process.env.TOKEN_COOKIE_NAME);
 		res.status(200).end();
 	} catch (error) {
 		res.status(500).json({ message: error.message });
