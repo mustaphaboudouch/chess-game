@@ -22,7 +22,7 @@ async function signUp(req, res) {
 		});
 
 		const token = buildToken(user);
-		res.status(201).json({ token });
+		res.status(201).json({ token, user });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -42,7 +42,7 @@ async function signIn(req, res) {
 		}
 
 		const token = buildToken(user);
-		res.status(200).json({ token });
+		res.status(200).json({ token, user });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
