@@ -8,17 +8,6 @@ function buildToken(user) {
 	});
 }
 
-function setToken(res, token) {
-	res.cookie(process.env.TOKEN_COOKIE_NAME, token, {
-		httpOnly: true,
-		secure: process.env.NODE_ENV === 'production',
-		sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-		domain: 'localhost',
-		path: '/',
-		maxAge: +process.env.TOKEN_EXPIRATION * 1000,
-	});
-}
-
 /**
  * Sign up a new user
  */
@@ -33,9 +22,7 @@ async function signUp(req, res) {
 		});
 
 		const token = buildToken(user);
-		setToken(res, token);
-
-		res.status(201).end();
+		res.status(201).json({ token });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -55,21 +42,7 @@ async function signIn(req, res) {
 		}
 
 		const token = buildToken(user);
-		setToken(res, token);
-
-		res.status(200).end();
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
-}
-
-/**
- * Sign out logged user
- */
-function signOut(req, res) {
-	try {
-		res.clearCookie(process.env.TOKEN_COOKIE_NAME);
-		res.status(200).end();
+		res.status(200).json({ token });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -80,7 +53,7 @@ function signOut(req, res) {
  */
 async function me(req, res) {
 	try {
-		const user = await User.findById(res.locals.token.userId);
+		const user = await User.findById(res.locals.user.userId);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -95,6 +68,5 @@ async function me(req, res) {
 module.exports = {
 	signUp,
 	signIn,
-	signOut,
 	me,
 };
