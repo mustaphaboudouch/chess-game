@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const cookieParser = require('cookie-parser');
 
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
@@ -46,8 +45,6 @@ app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-app.use(cookieParser());
 
 /**
  * Routes
