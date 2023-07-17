@@ -4,10 +4,10 @@ import { useAuthStore } from "../stores/auth";
 
 const values = reactive({ username: "", email: "", password: "" });
 
+const authStore = useAuthStore();
+
 async function handleSubmit() {
-  const auth = useAuthStore();
-  await auth.signUp(values);
-  console.log("VALUES :::", values);
+  await authStore.signUp(values);
 }
 </script>
 
@@ -17,15 +17,15 @@ async function handleSubmit() {
   <form @submit.prevent="handleSubmit">
     <div>
       <label for="username">Username</label>
-      <input v-model="values.username" id="username" type="text" />
+      <input id="username" type="text" v-model="values.username" />
     </div>
     <div>
       <label for="email">Email</label>
-      <input v-model="values.email" type="email" id="email" />
+      <input id="email" type="email" v-model="values.email" />
     </div>
     <div>
       <label for="password">Password</label>
-      <input v-model="values.password" type="password" id="password" />
+      <input id="password" type="password" v-model="values.password" />
     </div>
     <button type="submit">Submit</button>
   </form>

@@ -1,21 +1,17 @@
 <script setup>
 import { onMounted } from "vue";
-import { RouterLink, RouterView } from "vue-router";
+import { RouterView } from "vue-router";
 import { useAuthStore } from "./stores/auth";
+import Navbar from "./components/layout/Navbar.vue";
 
 onMounted(async function () {
-  const auth = useAuthStore();
-  await auth.setUser();
+  const authStore = useAuthStore();
+  await authStore.setUser();
 });
 </script>
 
 <template>
-  <nav>
-    <RouterLink to="/">Home</RouterLink>
-    <RouterLink to="/sign-in">Sign In</RouterLink>
-    <RouterLink to="/sign-up">Sign Up</RouterLink>
-    <button @click="auth.signOut">Sign Out</button>
-  </nav>
+  <Navbar />
   <main>
     <RouterView />
   </main>

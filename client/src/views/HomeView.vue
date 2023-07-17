@@ -2,8 +2,8 @@
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth";
 
-const auth = useAuthStore();
-const { user } = storeToRefs(auth);
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
 </script>
 
 <template>

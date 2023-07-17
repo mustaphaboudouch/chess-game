@@ -7,16 +7,15 @@ export const useAuthStore = defineStore({
   state: () => ({
     user: null
   }),
-  getters: {
-    getUser: (state) => state.user
-  },
   actions: {
     async setUser() {
       try {
+        this.isLoading = true;
         const response = await axios.get("http://localhost:3001/me", {
           withCredentials: true
         });
         this.user = response.data;
+        router.push("/");
       } catch (error) {
         console.error(error);
         this.user = null;

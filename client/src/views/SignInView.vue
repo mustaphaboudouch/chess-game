@@ -1,10 +1,12 @@
 <script setup>
 import { reactive } from "vue";
+import { useAuthStore } from "../stores/auth";
 
 const values = reactive({ email: "", password: "" });
 
-function handleSubmit() {
-  console.log("VALUES :::", values);
+async function handleSubmit() {
+  const authStore = useAuthStore();
+  await authStore.signIn(values);
 }
 </script>
 
@@ -14,11 +16,11 @@ function handleSubmit() {
   <form @submit.prevent="handleSubmit">
     <div>
       <label for="email">Email</label>
-      <input v-model="values.email" type="email" id="email" />
+      <input id="email" type="email" v-model="values.email" />
     </div>
     <div>
       <label for="password">Password</label>
-      <input v-model="values.password" type="password" id="password" />
+      <input id="password" type="password" v-model="values.password" />
     </div>
     <button type="submit">Submit</button>
   </form>
