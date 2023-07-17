@@ -1,16 +1,14 @@
 <script setup>
-import { RouterView } from 'vue-router';
-import AuthProvider from './providers/AuthProvider.vue';
-import Navbar from './components/Navbar.vue';
+import { RouterLink, RouterView } from "vue-router";
 </script>
 
 <template>
-  <AuthProvider>
-    <Navbar />
-    <main>
-      <RouterView />
-    </main>
-  </AuthProvider>
+  <nav>
+    <RouterLink to="/">Home</RouterLink>
+    <RouterLink to="/sign-in">Sign In</RouterLink>
+    <RouterLink to="/sign-up">Sign Up</RouterLink>
+  </nav>
+  <main>
+    <RouterView />
+  </main>
 </template>
-
-<style scoped></style>
