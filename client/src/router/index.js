@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import HomeView from "../views/HomeView.vue";
+import BoardView from "../views/BoardView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import SignInView from "../views/SignInView.vue";
 import SignUpView from "../views/SignUpView.vue";
@@ -13,6 +14,14 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView,
+      meta: {
+        isPrivate: true
+      }
+    },
+    {
+      path: "/board",
+      name: "board",
+      component: BoardView,
       meta: {
         isPrivate: true
       }

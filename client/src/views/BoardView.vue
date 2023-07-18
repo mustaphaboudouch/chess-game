@@ -7,6 +7,6 @@ const { user } = storeToRefs(authStore);
 </script>
 
 <template>
-  <h1>Dashboard Page</h1>
+  <h1>Board Page</h1>
   <p>Logged as : {{ user?.username }}</p>
 </template>
