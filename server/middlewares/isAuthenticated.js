@@ -3,7 +3,9 @@ const jwt = require('jsonwebtoken');
 function verifyToken(token) {
 	try {
 		return jwt.verify(token, process.env.TOKEN_SECRET_KEY);
-	} catch (error) {}
+	} catch (error) {
+		throw new Error(error.message);
+	}
 }
 
 /**
