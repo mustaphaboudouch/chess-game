@@ -41,7 +41,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), webhook);
  * Middlewares
  */
 
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));

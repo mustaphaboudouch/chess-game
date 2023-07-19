@@ -20,7 +20,7 @@ async function subscribe(req, res) {
 		}
 
 		const plan = getSubscriptionPlan(user);
-		const billingUrl = `${process.env.CLIENT_URL}/profile`;
+		const billingUrl = 'http://localhost:5173/profile';
 
 		// PRO Plan : create a portal session to manage subscription
 		if (plan === 'PRO' && user.stripeCustomerId) {
