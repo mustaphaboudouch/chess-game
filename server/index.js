@@ -1,18 +1,23 @@
 require('dotenv').config();
 
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const { Server } = require('socket.io');
 
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const { webhook } = require('./controllers/billing');
 
 /**
- * Initialize express app
+ * Initialize express app & servers
  */
 
 const app = express();
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: 'http://localhost:5173' } });
 
 /**
  * MongoDB connection
@@ -57,11 +62,23 @@ app.use('/', authRouter);
 app.use('/', billingRouter);
 
 /**
+ * Run socket server
+ */
+
+io.on('connection', function (socket) {
+	console.log(`🚀 ${socket.id} user connected successfully`);
+
+	socket.on('disconnect', function () {
+		console.log(`💤 ${socket.id} user disconnected successfully`);
+	});
+});
+
+/**
  * Run HTTP server
  */
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, function () {
+server.listen(PORT, function () {
 	console.log(`🚀 HTTP server is running on port ${PORT}`);
 });
