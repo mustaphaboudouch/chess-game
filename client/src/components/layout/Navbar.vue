@@ -11,7 +11,7 @@ const { user } = storeToRefs(authStore);
   <nav>
     <template v-if="!!user">
       <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/board">Board</RouterLink>
+      <RouterLink to="/game">Game</RouterLink>
       <RouterLink to="/profile">Profile</RouterLink>
       <button @click="authStore.signOut">Sign Out</button>
     </template>

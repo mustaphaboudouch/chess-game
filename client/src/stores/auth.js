@@ -12,7 +12,7 @@ export const useAuthStore = defineStore({
       try {
         const response = await axios.get("me");
         this.user = response.data;
-        router.push("/");
+        // router.push("/");
       } catch (error) {
         console.error(error);
         this.user = null;

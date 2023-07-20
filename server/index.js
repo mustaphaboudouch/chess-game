@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const { webhook } = require('./controllers/billing');
+const matchRouter = require('./routes/match');
 
 /**
  * Initialize express app & servers
@@ -60,6 +61,7 @@ app.get('/', function (req, res) {
 });
 app.use('/', authRouter);
 app.use('/', billingRouter);
+app.use('/', matchRouter);
 
 /**
  * Run socket server
