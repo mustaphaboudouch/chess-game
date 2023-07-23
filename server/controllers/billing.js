@@ -1,19 +1,13 @@
 const User = require('../models/user');
 const Stripe = require('../lib/stripe');
-
-function getSubscriptionPlan(user) {
-	const isPro =
-		user.stripePriceId &&
-		user.stripeCurrentPeriodEnd?.getTime() + 86_400_000 > Date.now();
-	return isPro ? 'PRO' : 'FREE';
-}
+const { getSubscriptionPlan } = require('../lib/subscription');
 
 /**
  * Create logged user stripe subscription
  */
 async function subscribe(req, res) {
 	try {
-		const user = await User.findById(res.locals.user.userId);
+		const user = await User.findById(res.locals.user.id);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });

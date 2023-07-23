@@ -1,8 +1,14 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const { getSubscriptionPlan } = require('../lib/subscription');
 
 function buildToken(user) {
-	const payload = { userId: user.id };
+	const payload = {
+		id: user.id,
+		username: user.username,
+		role: user.role,
+		score: user.score,
+	};
 	return jwt.sign(payload, process.env.TOKEN_SECRET_KEY, {
 		expiresIn: +process.env.TOKEN_EXPIRATION,
 	});
@@ -53,7 +59,7 @@ async function signIn(req, res) {
  */
 async function me(req, res) {
 	try {
-		const user = await User.findById(res.locals.user.userId);
+		const user = await User.findById(res.locals.user.id);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
