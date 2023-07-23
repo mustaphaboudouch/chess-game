@@ -10,6 +10,7 @@ export const useSocketStore = defineStore("socket", () => {
     }
   });
 
+  const stats = ref(null);
   const game = ref(null);
 
   /**
@@ -34,6 +35,15 @@ export const useSocketStore = defineStore("socket", () => {
 
   socket.on("connect_error", function (error) {
     console.log(error.message);
+  });
+
+  /**
+   * Stats events
+   */
+
+  socket.on("stats", function ({ stats: newStats }) {
+    console.log("stats");
+    stats.value = newStats;
   });
 
   /**
@@ -73,5 +83,5 @@ export const useSocketStore = defineStore("socket", () => {
     console.log("game-move-failed", message);
   });
 
-  return { socket, game, updateGame };
+  return { socket, game, stats, updateGame };
 });

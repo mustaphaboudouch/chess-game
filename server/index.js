@@ -11,6 +11,7 @@ const { Chess } = require('chess.js');
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const { webhook } = require('./controllers/billing');
+const User = require('./models/user');
 const Game = require('./models/game');
 
 /**
@@ -101,8 +102,49 @@ async function getCurrentGame(user) {
 			},
 		],
 	});
-
 	return game;
+}
+
+async function getStats(userId) {
+	const user = await User.findById(userId);
+
+	const stats = {};
+
+	// Admin stats
+	if (user.role === 'ADMIN') {
+		stats.users = {};
+		stats.users.admins = await User.countDocuments({ role: 'ADMIN' });
+		stats.users.players = await User.countDocuments({ role: 'PLAYER' });
+
+		stats.games = {};
+		stats.games.waiting = await Game.countDocuments({ status: 'WAITING' });
+		stats.games.playing = await Game.countDocuments({ status: 'PLAYING' });
+		stats.games.done = await Game.countDocuments({ status: 'DONE' });
+	}
+
+	// Player stats
+	if (user.role === 'PLAYER') {
+		stats.games = {};
+		stats.games.waiting = await Game.countDocuments({
+			$or: [{ player: userId }, { opponent: userId }],
+			status: 'WAITING',
+		});
+		stats.games.playing = await Game.countDocuments({
+			$or: [{ player: userId }, { opponent: userId }],
+			status: 'PLAYING',
+		});
+		stats.games.done = await Game.countDocuments({
+			$or: [{ player: userId }, { opponent: userId }],
+			status: 'DONE',
+		});
+		stats.games.wins = await Game.countDocuments({
+			$or: [{ player: userId }, { opponent: userId }],
+			winner: userId,
+			status: 'DONE',
+		});
+	}
+
+	return stats;
 }
 
 io.on('connection', async function (socket) {
@@ -113,6 +155,12 @@ io.on('connection', async function (socket) {
 	 */
 	const game = await getCurrentGame(socket.user);
 	socket.emit('game-current', { game });
+
+	/**
+	 *
+	 */
+	const stats = await getStats(socket.user.id);
+	socket.emit('stats', { stats });
 
 	/**
 	 *
