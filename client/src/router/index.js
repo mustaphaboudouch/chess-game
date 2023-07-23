@@ -35,7 +35,8 @@ const router = createRouter({
       name: "users",
       component: UsersView,
       meta: {
-        isPrivate: true
+        isPrivate: true,
+        isAdmin: true
       }
     },
     {
@@ -43,7 +44,8 @@ const router = createRouter({
       name: "user",
       component: UserView,
       meta: {
-        isPrivate: true
+        isPrivate: true,
+        isAdmin: true
       }
     },
     {
@@ -84,7 +86,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
-  // Auth routes : redirect to `home` if user is authenticated
+  // Auth routes : redirect to `dashboard` if user is authenticated
   if (to.meta.isAuth && authStore.user) {
     return next("/");
   }
@@ -92,6 +94,11 @@ router.beforeEach((to, from, next) => {
   // Private routes : redirect to `sign-in` if user is unauthenticated
   if (to.meta.isPrivate && !authStore.user) {
     return next("/sign-in");
+  }
+
+  // Admin routes : redirect to `dashboard` if user is not admin
+  if (to.meta.isAdmin && authStore.user && authStore.user.role !== "ADMIN") {
+    return next("/");
   }
 
   return next();

@@ -71,8 +71,26 @@ async function me(req, res) {
 	}
 }
 
+/**
+ * Update user profile (username)
+ */
+async function updateProfile(req, res) {
+	try {
+		await User.findByIdAndUpdate(res.locals.user.id, {
+			username: req.body.username,
+		});
+
+		const user = await User.findById(res.locals.user.id);
+
+		res.status(201).json(user);
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
+
 module.exports = {
 	signUp,
 	signIn,
 	me,
+	updateProfile,
 };

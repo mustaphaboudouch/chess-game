@@ -23,7 +23,7 @@ async function getById(req, res) {
 		const user = await User.findById(req.params.id);
 
 		if (!user) {
-			res.status(404).json({ message: 'User not found' });
+			return res.status(404).json({ message: 'User not found' });
 		}
 
 		res.status(200).json(user);
@@ -37,7 +37,7 @@ async function getById(req, res) {
  */
 async function remove(req, res) {
 	try {
-		const user = await User.findByIdAndDelete(req.params.id);
+		await User.findByIdAndDelete(req.params.id);
 
 		const users = await User.find({
 			role: 'PLAYER',

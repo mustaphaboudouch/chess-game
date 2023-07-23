@@ -4,21 +4,32 @@ import axios from "../lib/axios";
 import { getSubscriptionPlan } from "../lib/utils";
 
 const user = ref(null);
-
-onMounted(async function () {
-  try {
-    const response = await axios.get("me");
-    user.value = response.data;
-  } catch (error) {
-    console.log(error.message);
-  }
-});
+const username = ref(null);
 
 const plan = computed(function () {
   return getSubscriptionPlan(user.value);
 });
 
-async function handleClick() {
+async function onUpdateProfile() {
+  try {
+    const response = await axios.put("update-profile", { username: username.value });
+    user.value = response.data;
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+onMounted(async function () {
+  try {
+    const response = await axios.get("me");
+    user.value = response.data;
+    username.value = response.data.username;
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+async function onSubscribe() {
   try {
     const response = await axios.get("subscribe");
     window.location.href = response.data.url;
@@ -31,10 +42,6 @@ async function handleClick() {
 <template>
   <h1>Profile Page</h1>
 
-  <div v-if="!user">
-    <p>Loading ...</p>
-  </div>
-
   <div v-if="!!user">
     <ul>
       <li>Username : {{ user?.username }}</li>
@@ -44,7 +51,15 @@ async function handleClick() {
       <li>Plan : {{ plan }}</li>
     </ul>
 
-    <button @click="handleClick">
+    <form @submit.prevent="onUpdateProfile">
+      <div>
+        <label for="username">Username</label>
+        <input id="username" type="text" v-model="username" />
+      </div>
+      <button type="submit">Update</button>
+    </form>
+
+    <button @click="onSubscribe">
       <span v-if="plan === 'FREE'">Upgrade to PRO</span>
       <span v-else>Manage Subscription</span>
     </button>

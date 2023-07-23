@@ -14,7 +14,7 @@ async function isSubscribed(req, res, next) {
 		user.stripePriceId &&
 		user.stripeCurrentPeriodEnd?.getTime() + 86_400_000 > Date.now();
 
-	if (!isPro) {
+	if (!isPro && user.role !== 'ADMIN') {
 		return res.status(401).json({ message: 'Not subscribed' });
 	}
 
