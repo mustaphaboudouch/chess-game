@@ -6,6 +6,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { Chess } = require('chess.js');
 
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
@@ -19,7 +20,9 @@ const Game = require('./models/game');
 const app = express();
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+	cors: { origin: '*' },
+});
 
 /**
  * MongoDB connection
@@ -119,6 +122,7 @@ io.on('connection', async function (socket) {
 				throw new Error('Game not created');
 			}
 
+			socket.join(game._id.toString());
 			socket.emit('game-create-success', { game });
 		} catch (error) {
 			return socket.emit('game-create-failed', {
@@ -132,15 +136,62 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-join', async function ({ gameId }) {
 		try {
-			const game = await Game.findByIdAndUpdate(gameId, {
+			const game = await Game.findById(gameId);
+
+			if (!game) {
+				throw new Error('Game not found');
+			}
+
+			console.log('gameId ::: ', gameId);
+
+			if (game.player.toString() === socket.user.id) {
+				socket.join(gameId);
+				socket.to(gameId).emit('game-join-success', { game });
+				socket.emit('game-join-success', { game });
+				return;
+			}
+
+			await Game.findByIdAndUpdate(game, {
 				opponent: socket.user.id,
 				status: 'PLAYING',
 			});
 
+			const updatedGame = await Game.findById(gameId);
+
 			socket.join(gameId);
-			socket.to(gameId).emit('game-join-success', { game });
+			socket.to(gameId).emit('game-join-success', { game: updatedGame });
+			socket.emit('game-join-success', { game: updatedGame });
 		} catch (error) {
 			return socket.emit('game-join-failed', {
+				message: error.message,
+			});
+		}
+	});
+
+	/**
+	 *
+	 */
+	socket.on('game-move', async function ({ gameId, move }) {
+		try {
+			const game = await Game.findById(gameId);
+
+			const chess = new Chess(game.fen);
+			const isMoveLeggal = chess.move(move);
+
+			if (!isMoveLeggal) {
+				throw new Error('Illegal move');
+			}
+
+			await Game.findByIdAndUpdate(gameId, {
+				fen: chess.fen(),
+			});
+
+			const newGame = await Game.findById(gameId);
+
+			socket.to(gameId).emit('game-move-success', { game: newGame });
+			// socket.emit('game-move-success', { game: newGame });
+		} catch (error) {
+			return socket.emit('game-move-failed', {
 				message: error.message,
 			});
 		}

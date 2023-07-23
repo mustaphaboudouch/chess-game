@@ -13,6 +13,14 @@ export const useSocketStore = defineStore("socket", () => {
   const game = ref(null);
 
   /**
+   * Actions
+   */
+
+  function updateGame(newGame) {
+    game.value = newGame;
+  }
+
+  /**
    * Global events
    */
 
@@ -48,7 +56,7 @@ export const useSocketStore = defineStore("socket", () => {
   });
 
   socket.on("game-join-success", function ({ game: newGame }) {
-    console.log("game-join-success");
+    console.log("game-join-success --------------------");
     game.value = newGame;
   });
 
@@ -56,5 +64,14 @@ export const useSocketStore = defineStore("socket", () => {
     console.log("game-join-failed", message);
   });
 
-  return { socket, game };
+  socket.on("game-move-success", function ({ game: newGame }) {
+    console.log("game-move-success");
+    game.value = newGame;
+  });
+
+  socket.on("game-move-failed", function ({ message }) {
+    console.log("game-move-failed", message);
+  });
+
+  return { socket, game, updateGame };
 });

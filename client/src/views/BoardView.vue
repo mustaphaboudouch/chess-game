@@ -18,6 +18,8 @@ onMounted(function () {
   <h1>Board Page</h1>
 
   <div v-if="game">
+    <div>{{ game.fen }}</div>
+
     <div
       v-if="game.status !== 'PLAYING'"
       style="background: rgba(0, 0, 0, 0.5); position: fixed; width: 100vw; height: 100vh"

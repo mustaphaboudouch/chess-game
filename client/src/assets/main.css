@@ -5,3 +5,11 @@
 .active {
   font-weight: bold;
 }
+
+.cell-selected {
+  background-color: #ff0000;
+}
+
+.cell-move {
+  background-color: #cccccc;
+}
