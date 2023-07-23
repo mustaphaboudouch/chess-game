@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const matchSchema = mongoose.Schema({
+const gameSchema = mongoose.Schema({
 	player: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'User',
@@ -21,13 +21,10 @@ const matchSchema = mongoose.Schema({
 		enum: ['WAITING', 'PLAYING', 'DONE'],
 		default: 'WAITING',
 	},
-	code: {
+	fen: {
 		type: String,
-		required: true,
-		unique: true,
-		minlength: 6,
-		maxlength: 6,
+		default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
 	},
 });
 
-module.exports = mongoose.model('Match', matchSchema);
+module.exports = mongoose.model('Game', gameSchema);

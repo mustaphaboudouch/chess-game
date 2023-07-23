@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const { webhook } = require('./controllers/billing');
+const Game = require('./models/game');
 
 /**
  * Initialize express app & servers
@@ -88,9 +89,66 @@ app.use('/', billingRouter);
  * Run socket server
  */
 
-io.on('connection', function (socket) {
+io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
 
+	/**
+	 *
+	 */
+	const game = await Game.findOne({
+		$and: [
+			{ status: { $in: ['WAITING', 'PLAYING'] } },
+			{
+				$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+			},
+		],
+	});
+	socket.emit('game-current', { game });
+
+	/**
+	 *
+	 */
+	socket.on('game-create', async function () {
+		try {
+			const game = await Game.create({
+				player: socket.user.id,
+				status: 'WAITING',
+			});
+
+			if (!game) {
+				throw new Error('Game not created');
+			}
+
+			socket.emit('game-create-success', { game });
+		} catch (error) {
+			return socket.emit('game-create-failed', {
+				message: error.message,
+			});
+		}
+	});
+
+	/**
+	 *
+	 */
+	socket.on('game-join', async function ({ gameId }) {
+		try {
+			const game = await Game.findByIdAndUpdate(gameId, {
+				opponent: socket.user.id,
+				status: 'PLAYING',
+			});
+
+			socket.join(gameId);
+			socket.to(gameId).emit('game-join-success', { game });
+		} catch (error) {
+			return socket.emit('game-join-failed', {
+				message: error.message,
+			});
+		}
+	});
+
+	/**
+	 *
+	 */
 	socket.on('disconnect', function () {
 		console.log(`💤 ${socket.id} user disconnected successfully`);
 	});

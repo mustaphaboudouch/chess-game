@@ -3,6 +3,7 @@ import { useAuthStore } from "../stores/auth";
 
 import HomeView from "../views/HomeView.vue";
 import GameView from "../views/GameView.vue";
+import BoardView from "../views/BoardView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import SignInView from "../views/SignInView.vue";
 import SignUpView from "../views/SignUpView.vue";
@@ -23,6 +24,14 @@ const router = createRouter({
       path: "/game",
       name: "game",
       component: GameView,
+      meta: {
+        isPrivate: true
+      }
+    },
+    {
+      path: "/game/:id",
+      name: "board",
+      component: BoardView,
       meta: {
         isPrivate: true
       }
