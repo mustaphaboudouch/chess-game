@@ -92,20 +92,26 @@ app.use('/', billingRouter);
  * Run socket server
  */
 
+async function getCurrentGame(user) {
+	const game = await Game.findOne({
+		$and: [
+			{ status: { $in: ['WAITING', 'PLAYING'] } },
+			{
+				$or: [{ player: user.id }, { opponent: user.id }],
+			},
+		],
+	});
+
+	return game;
+}
+
 io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
 
 	/**
 	 *
 	 */
-	const game = await Game.findOne({
-		$and: [
-			{ status: { $in: ['WAITING', 'PLAYING'] } },
-			{
-				$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
-			},
-		],
-	});
+	const game = await getCurrentGame(socket.user);
 	socket.emit('game-current', { game });
 
 	/**
@@ -113,6 +119,12 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-create', async function () {
 		try {
+			const currentGame = await getCurrentGame(socket.user);
+
+			if (!currentGame) {
+				throw new Error('You have already a game');
+			}
+
 			const game = await Game.create({
 				player: socket.user.id,
 				status: 'WAITING',
@@ -141,8 +153,6 @@ io.on('connection', async function (socket) {
 			if (!game) {
 				throw new Error('Game not found');
 			}
-
-			console.log('gameId ::: ', gameId);
 
 			if (game.player.toString() === socket.user.id) {
 				socket.join(gameId);
@@ -173,7 +183,18 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-move', async function ({ gameId, move }) {
 		try {
-			const game = await Game.findById(gameId);
+			const game = await Game.findOne({
+				$and: [
+					{ _id: gameId, status: 'PLAYING' },
+					{
+						$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+					},
+				],
+			});
+
+			if (!game) {
+				throw new Error('Game not found');
+			}
 
 			const chess = new Chess(game.fen);
 			const isMoveLeggal = chess.move(move);
@@ -189,7 +210,7 @@ io.on('connection', async function (socket) {
 			const newGame = await Game.findById(gameId);
 
 			socket.to(gameId).emit('game-move-success', { game: newGame });
-			// socket.emit('game-move-success', { game: newGame });
+			socket.emit('game-move-success', { game: newGame });
 		} catch (error) {
 			return socket.emit('game-move-failed', {
 				message: error.message,
