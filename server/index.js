@@ -5,11 +5,11 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const { webhook } = require('./controllers/billing');
-const matchRouter = require('./routes/match');
 
 /**
  * Initialize express app & servers
@@ -18,7 +18,7 @@ const matchRouter = require('./routes/match');
 const app = express();
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: 'http://localhost:5173' } });
+const io = new Server(server, { cors: { origin: '*' } });
 
 /**
  * MongoDB connection
@@ -47,10 +47,32 @@ app.post('/webhook', express.raw({ type: 'application/json' }), webhook);
  * Middlewares
  */
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: '*' }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+function verifyToken(token) {
+	try {
+		return jwt.verify(token, process.env.TOKEN_SECRET_KEY);
+	} catch (error) {}
+}
+
+io.use(function (socket, next) {
+	const { token } = socket.handshake.auth;
+
+	if (!token) return next(new Error('Unauthenticated'));
+
+	const [type, encodedToken] = token.split(' ');
+	if (type !== 'Bearer' || !encodedToken)
+		return next(new Error('Unauthenticated'));
+
+	const decodedToken = verifyToken(encodedToken);
+	if (!decodedToken) return next(new Error('Unauthenticated'));
+
+	socket.user = decodedToken;
+	next();
+});
 
 /**
  * Routes
@@ -61,7 +83,6 @@ app.get('/', function (req, res) {
 });
 app.use('/', authRouter);
 app.use('/', billingRouter);
-app.use('/', matchRouter);
 
 /**
  * Run socket server
