@@ -10,6 +10,7 @@ const { Chess } = require('chess.js');
 
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
+const userRouter = require('./routes/user');
 const { webhook } = require('./controllers/billing');
 const User = require('./models/user');
 const Game = require('./models/game');
@@ -88,6 +89,7 @@ app.get('/', function (req, res) {
 });
 app.use('/', authRouter);
 app.use('/', billingRouter);
+app.use('/', userRouter);
 
 /**
  * Run socket server
