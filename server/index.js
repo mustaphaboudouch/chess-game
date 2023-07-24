@@ -171,7 +171,7 @@ io.on('connection', async function (socket) {
 		try {
 			const currentGame = await getCurrentGame(socket.user);
 
-			if (!currentGame) {
+			if (currentGame) {
 				throw new Error('You have already a game');
 			}
 
