@@ -56,30 +56,6 @@ const router = createRouter({
         isPrivate: true
       }
     },
-    {
-      path: "/profile",
-      name: "profile",
-      component: ProfileView,
-      meta: {
-        isPrivate: true
-      }
-    },
-    {
-      path: "/sign-in",
-      name: "sign-in",
-      component: SignInView,
-      meta: {
-        isAuth: true
-      }
-    },
-    {
-      path: "/sign-up",
-      name: "sign-up",
-      component: SignUpView,
-      meta: {
-        isAuth: true
-      }
-    }
   ]
 });
 
