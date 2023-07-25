@@ -4,6 +4,7 @@
 export function cleanPosition(position) {
   let newPosition = position.replace(/\+/g, "");
   newPosition = newPosition.replace(/=\w+/g, "");
+  newPosition = newPosition.replace(/\#/g, "");
   return newPosition.slice(-2);
 }
 
