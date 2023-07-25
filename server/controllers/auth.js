@@ -10,7 +10,7 @@ function buildToken(user) {
 		score: user.score,
 	};
 	return jwt.sign(payload, process.env.TOKEN_SECRET_KEY, {
-		expiresIn: +process.env.TOKEN_EXPIRATION,
+		expiresIn: 604800,
 	});
 }
 

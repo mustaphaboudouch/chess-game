@@ -113,7 +113,7 @@ async function getStats(userId) {
 	const stats = {};
 
 	// Admin stats
-	if (user.role === 'ADMIN') {
+	if (user?.role === 'ADMIN') {
 		stats.users = {};
 		stats.users.admins = await User.countDocuments({ role: 'ADMIN' });
 		stats.users.players = await User.countDocuments({ role: 'PLAYER' });
@@ -125,7 +125,7 @@ async function getStats(userId) {
 	}
 
 	// Player stats
-	if (user.role === 'PLAYER') {
+	if (user?.role === 'PLAYER') {
 		stats.games = {};
 		stats.games.waiting = await Game.countDocuments({
 			$or: [{ player: userId }, { opponent: userId }],
