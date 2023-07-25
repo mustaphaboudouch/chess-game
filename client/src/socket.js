@@ -5,8 +5,9 @@ import router from "./router";
 
 export const state = reactive({
   chess: new Chess(),
+  stats: null,
   game: null,
-  stats: null
+  games: []
 });
 
 const socket = io("http://localhost:3001", {
@@ -36,6 +37,11 @@ socket.on("connect_error", function (error) {
  * Game events
  */
 
+socket.on("game-list", function ({ games }) {
+  console.log("game-list", games);
+  state.games = games;
+});
+
 socket.on("game-current", function ({ game: newGame }) {
   console.log("game-current", newGame);
   state.game = newGame;
@@ -46,7 +52,7 @@ socket.on("game-create-success", function ({ game: newGame }) {
   console.log("game-create-success", newGame);
   state.game = newGame;
   state.chess = new Chess(newGame.fen);
-  router.push(`/game/${state.game._id}`);
+  router.push("/board");
 });
 
 socket.on("game-create-failed", function ({ message }) {
@@ -57,6 +63,7 @@ socket.on("game-join-success", function ({ game: newGame }) {
   console.log("game-join-success", newGame);
   state.game = newGame;
   state.chess = new Chess(newGame.fen);
+  router.push("/board");
 });
 
 socket.on("game-join-failed", function ({ message }) {

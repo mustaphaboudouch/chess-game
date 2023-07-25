@@ -31,7 +31,7 @@ const router = createRouter({
       }
     },
     {
-      path: "/game/:id",
+      path: "/board",
       name: "board",
       component: BoardView,
       meta: {
