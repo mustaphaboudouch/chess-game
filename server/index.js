@@ -13,6 +13,7 @@ const billingRouter = require('./routes/billing');
 const userRouter = require('./routes/user');
 const { webhook } = require('./controllers/billing');
 const Game = require('./models/game');
+const { generateCode } = require('./lib/utils');
 
 /**
  * Initialize express app & servers
@@ -88,6 +89,14 @@ app.use('/', userRouter);
  * Run socket server
  */
 
+async function getOnGoingGames(user) {
+	return Game.find({
+		status: 'WAITING',
+		visibility: 'PUBLIC',
+		// TODO: player != user.id
+	});
+}
+
 io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
 
@@ -106,11 +115,14 @@ io.on('connection', async function (socket) {
 		socket.join(currentGame._id.toString());
 		socket.emit('game-current', { game: currentGame });
 	}
+	const games = await getOnGoingGames(socket.user);
+	socket.broadcast.emit('game-list', { games });
+	socket.emit('game-list', { games });
 
 	/**
 	 * Crate new game
 	 */
-	socket.on('game-create', async function () {
+	socket.on('game-create', async function ({ visibility }) {
 		try {
 			const currentGame = await Game.findOne({
 				$and: [
@@ -125,14 +137,30 @@ io.on('connection', async function (socket) {
 				throw new Error('You have already a game');
 			}
 
+			let code = null;
+			let gameWithCode = null;
+
+			if (visibility === 'PRIVATE') {
+				do {
+					code = generateCode();
+					gameWithCode = await Game.findOne({ code });
+				} while (!!gameWithCode);
+			}
+
 			const game = await Game.create({
 				player: socket.user.id,
 				status: 'WAITING',
+				visibility,
+				code,
 			});
 
 			if (!game) {
 				throw new Error('Game not created');
 			}
+
+			const games = await getOnGoingGames(socket.user);
+			socket.broadcast.emit('game-list', { games });
+			socket.emit('game-list', { games });
 
 			socket.join(game._id.toString());
 			socket.emit('game-create-success', { game });
@@ -142,13 +170,17 @@ io.on('connection', async function (socket) {
 	});
 
 	/**
-	 * Join existing game
+	 * Join a public game
 	 */
-	socket.on('game-join', async function ({ gameId }) {
+	socket.on('game-join-public', async function ({ gameId }) {
 		try {
 			const currentGame = await Game.findOne({
 				$and: [
-					{ _id: gameId, status: { $in: ['WAITING', 'PLAYING'] } },
+					{
+						_id: gameId,
+						visibility: 'PUBLIC',
+						status: { $in: ['WAITING', 'PLAYING'] },
+					},
 					{
 						$or: [
 							{ opponent: null },
@@ -175,6 +207,61 @@ io.on('connection', async function (socket) {
 			}
 
 			const game = await Game.findById(currentGame._id);
+
+			const games = await getOnGoingGames(socket.user);
+			socket.broadcast.emit('game-list', { games });
+			socket.emit('game-list', { games });
+
+			socket.join(game._id.toString());
+			socket.to(game._id.toString()).emit('game-join-success', { game });
+			socket.emit('game-join-success', { game });
+		} catch (error) {
+			socket.emit('game-join-failed', { message: error.message });
+		}
+	});
+
+	/**
+	 * Join a private game
+	 */
+	socket.on('game-join-private', async function ({ code }) {
+		try {
+			const currentGame = await Game.findOne({
+				$and: [
+					{
+						code,
+						visibility: 'PRIVATE',
+						status: { $in: ['WAITING', 'PLAYING'] },
+					},
+					{
+						$or: [
+							{ opponent: null },
+							{
+								$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+							},
+						],
+					},
+				],
+			});
+
+			if (!currentGame) {
+				throw new Error('Game not found');
+			}
+
+			if (
+				currentGame.player.toString() !== socket.user.id &&
+				!currentGame.opponent
+			) {
+				await Game.findByIdAndUpdate(currentGame._id, {
+					opponent: socket.user.id,
+					status: 'PLAYING',
+				});
+			}
+
+			const game = await Game.findById(currentGame._id);
+
+			const games = await getOnGoingGames(socket.user);
+			socket.broadcast.emit('game-list', { games });
+			socket.emit('game-list', { games });
 
 			socket.join(game._id.toString());
 			socket.to(game._id.toString()).emit('game-join-success', { game });
@@ -237,6 +324,10 @@ io.on('connection', async function (socket) {
 			await Game.findByIdAndUpdate(gameId, {
 				status: 'CANCELED',
 			});
+
+			const games = await getOnGoingGames(socket.user);
+			socket.broadcast.emit('game-list', { games });
+			socket.emit('game-list', { games });
 
 			socket.to(gameId).emit('game-quit-success');
 			socket.emit('game-quit-success');

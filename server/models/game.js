@@ -22,9 +22,21 @@ const gameSchema = mongoose.Schema(
 			enum: ['WAITING', 'PLAYING', 'DONE', 'CANCELED'],
 			default: 'WAITING',
 		},
+		visibility: {
+			type: String,
+			enum: ['PUBLIC', 'PRIVATE'],
+			default: 'PUBLIC',
+		},
 		fen: {
 			type: String,
 			default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+		},
+		code: {
+			type: String,
+			minlength: 6,
+			maxlength: 6,
+			unique: true,
+			default: null,
 		},
 	},
 	{ timestamps: true },
