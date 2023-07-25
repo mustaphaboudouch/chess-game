@@ -1,18 +1,5 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const { getSubscriptionPlan } = require('../lib/subscription');
-
-function buildToken(user) {
-	const payload = {
-		id: user.id,
-		username: user.username,
-		role: user.role,
-		score: user.score,
-	};
-	return jwt.sign(payload, process.env.TOKEN_SECRET_KEY, {
-		expiresIn: 604800,
-	});
-}
+const { buildToken } = require('../lib/token');
 
 /**
  * Sign up a new user

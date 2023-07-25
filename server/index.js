@@ -5,9 +5,9 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-const jwt = require('jsonwebtoken');
 const { Chess } = require('chess.js');
 
+const { verifyToken } = require('./lib/token');
 const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const userRouter = require('./routes/user');
@@ -57,12 +57,6 @@ app.use(cors({ origin: '*' }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-function verifyToken(token) {
-	try {
-		return jwt.verify(token, process.env.TOKEN_SECRET_KEY);
-	} catch (error) {}
-}
 
 io.use(function (socket, next) {
 	const { token } = socket.handshake.auth;
