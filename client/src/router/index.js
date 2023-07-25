@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
-import ProfileView from "../views/ProfileView.vue";
-import SignInView from "../views/SignInView.vue";
-import SignUpView from "../views/SignUpView.vue";
+
 import HomeView from "../views/HomeView.vue";
 import GameView from "../views/GameView.vue";
 import BoardView from "../views/BoardView.vue";
 import UsersView from "../views/UsersView.vue";
 import UserView from "../views/UserView.vue";
+import ProfileView from "../views/ProfileView.vue";
+import SignInView from "../views/SignInView.vue";
+import SignUpView from "../views/SignUpView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +31,14 @@ const router = createRouter({
       }
     },
     {
+      path: "/game/:id",
+      name: "board",
+      component: BoardView,
+      meta: {
+        isPrivate: true
+      }
+    },
+    {
       path: "/users",
       name: "users",
       component: UsersView,
@@ -45,14 +54,6 @@ const router = createRouter({
       meta: {
         isPrivate: true,
         isAdmin: true
-      }
-    },
-    {
-      path: "/game/:id",
-      name: "board",
-      component: BoardView,
-      meta: {
-        isPrivate: true
       }
     },
     {
@@ -79,7 +80,6 @@ const router = createRouter({
         isAuth: true
       }
     }
-
   ]
 });
 

@@ -1,29 +1,38 @@
 <script setup>
-import { onMounted } from "vue";
-import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
-import { useSocketStore } from "../stores/socket";
+import socket, { state } from "../socket";
 import ChessBoard from "../components/ui/ChessBoard.vue";
+
 const route = useRoute();
-const socketStore = useSocketStore();
-const { game } = storeToRefs(socketStore);
 
 onMounted(function () {
-  socketStore.socket.emit("game-join", { gameId: route.params.id });
+  socket.connect();
 });
-</script>
 
+onUnmounted(function () {
+  socket.disconnect();
+});
+
+function join() {
+  socket.emit("game-join", { gameId: route.params.id });
+}
+</script>
 
 <template>
   <h1>Board Page</h1>
 
-  <div v-if="game">
-    <div>{{ game.fen }}</div>
+  <div v-if="!state.game">
+    <button @click="join">Join game</button>
+  </div>
 
-    <div
-      v-if="game.status !== 'PLAYING'"
-      style="background: rgba(0, 0, 0, 0.5); position: fixed; width: 100vw; height: 100vh"
-    ></div>
-    <ChessBoard :game="game" />
+  <div v-if="state.game">
+    <div v-if="state.game.status === 'WAITING'">
+      <p>Waiting for your opponent ...</p>
+    </div>
+
+    <div v-if="state.game.status === 'PLAYING'">
+      <ChessBoard :game="state.game" />
+    </div>
   </div>
 </template>

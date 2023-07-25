@@ -1,58 +1,74 @@
 <script setup>
-import { computed, onBeforeUpdate, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { storeToRefs } from "pinia";
-import { Chess } from "chess.js";
 import { useAuthStore } from "../../stores/auth";
-import { useSocketStore } from "../../stores/socket";
+import socket, { state } from "../../socket";
 import { fenToArray, cleanPosition } from "../../lib/chess";
 
 const props = defineProps({
   game: Object
 });
 
-const route = useRoute();
-const socketStore = useSocketStore();
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 
-const chess = new Chess(props.game.fen);
-const selectedPiece = ref(null);
-const legalMoves = ref([]);
+const values = reactive({
+  selectedPiece: null,
+  legalMoves: []
+});
 
 const board = computed(function () {
   return fenToArray(props.game.fen);
 });
 
-onBeforeUpdate(() => {
-  chess.load(props.game.fen);
+onMounted(function () {
+  socket.connect();
 });
 
-function handleClick(piece, position) {
-  const moves = chess.moves({ square: position });
+onUnmounted(function () {
+  socket.disconnect();
+});
+
+function isPromoting(move) {
+  const piece = state.chess.get(move.from);
+
+  if (piece?.type !== "p") return false;
+
+  if (piece.color !== state.chess.turn()) return false;
+
+  if (!["1", "8"].some((it) => move.to.endsWith(it))) return false;
+
+  return state.chess
+    .moves({ square: move.from, verbose: true })
+    .map((it) => it.to)
+    .includes(move.to);
+}
+
+function onClickPiece(piece, position) {
+  const moves = state.chess.moves({ square: position });
 
   const isMyTurn =
-    (user.value.id === props.game.player && chess.turn() === "w") ||
-    (user.value.id === props.game.opponent && chess.turn() === "b");
+    (user.value.id === props.game.player && state.chess.turn() === "w") ||
+    (user.value.id === props.game.opponent && state.chess.turn() === "b");
 
   if (!isMyTurn) return;
 
-  if (selectedPiece.value && legalMoves.value.includes(position)) {
-    // TODO: change UI in local
+  if (values.selectedPiece && values.legalMoves.includes(position)) {
+    console.log(
+      "IS PROMOTING :::",
+      isPromoting({ from: values.selectedPiece.position, to: position })
+    );
 
-    // change UI for oppenent
-    socketStore.socket.emit("game-move", {
-      gameId: route.params.id,
-      move: { from: selectedPiece.value.position, to: position }
+    socket.emit("game-move", {
+      gameId: state.game._id,
+      move: { from: values.selectedPiece.position, to: position }
     });
 
-    // reset state
-    selectedPiece.value = null;
-    legalMoves.value = [];
+    values.selectedPiece = null;
+    values.legalMoves = [];
   } else {
-    // highlight legal moves
-    selectedPiece.value = moves.length ? { piece, position } : null;
-    legalMoves.value = [...moves.map((m) => cleanPosition(m))];
+    values.selectedPiece = moves.length ? { piece, position } : null;
+    values.legalMoves = [...moves.map((m) => cleanPosition(m))];
   }
 }
 </script>
@@ -60,15 +76,17 @@ function handleClick(piece, position) {
 <template>
   <h1>Chess Board</h1>
 
+  <pre>{{ JSON.stringify(props.game, null, 2) }}</pre>
+
   <div v-for="(row, index) in board" :key="index" style="display: flex">
     <button
       v-for="(cell, index) in row"
       :key="index"
-      @click="handleClick(cell.piece, cell.position)"
+      @click="onClickPiece(cell.piece, cell.position)"
       :class="[
         {
-          'cell-selected': cell.position === selectedPiece?.position,
-          'cell-move': legalMoves.includes(cell.position)
+          'cell-selected': cell.position === values.selectedPiece?.position,
+          'cell-move': values.legalMoves.includes(cell.position)
         },
         ''
       ]"
