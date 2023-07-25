@@ -14,7 +14,9 @@ const { user } = storeToRefs(authStore);
 
 const values = reactive({
   selectedPiece: null,
-  legalMoves: []
+  targetPosition: null,
+  legalMoves: [],
+  showModal: false
 });
 
 const board = computed(function () {
@@ -54,29 +56,53 @@ function onClickPiece(piece, position) {
   if (!isMyTurn) return;
 
   if (values.selectedPiece && values.legalMoves.includes(position)) {
-    console.log(
-      "IS PROMOTING :::",
-      isPromoting({ from: values.selectedPiece.position, to: position })
-    );
+    values.targetPosition = position;
 
-    socket.emit("game-move", {
-      gameId: state.game._id,
-      move: { from: values.selectedPiece.position, to: position }
-    });
+    if (isPromoting({ from: values.selectedPiece.position, to: position })) {
+      values.showModal = true;
+    } else {
+      socket.emit("game-move", {
+        gameId: state.game._id,
+        move: { from: values.selectedPiece.position, to: position }
+      });
 
-    values.selectedPiece = null;
-    values.legalMoves = [];
+      values.selectedPiece = null;
+      values.legalMoves = [];
+    }
   } else {
     values.selectedPiece = moves.length ? { piece, position } : null;
     values.legalMoves = [...moves.map((m) => cleanPosition(m))];
   }
 }
+
+function onChoosePiece(piece) {
+  values.showModal = false;
+
+  socket.emit("game-move", {
+    gameId: state.game._id,
+    move: {
+      from: values.selectedPiece.position,
+      to: values.targetPosition,
+      promotion: piece
+    }
+  });
+
+  values.selectedPiece = null;
+  values.legalMoves = [];
+}
 </script>
 
 <template>
-  <h1>Chess Board</h1>
-
   <pre>{{ JSON.stringify(props.game, null, 2) }}</pre>
+
+  <div v-if="values.showModal">
+    <form @submit.prevent="onChoosePiece">
+      <button @click="onChoosePiece('q')">Q</button>
+      <button @click="onChoosePiece('r')">R</button>
+      <button @click="onChoosePiece('b')">B</button>
+      <button @click="onChoosePiece('n')">N</button>
+    </form>
+  </div>
 
   <div v-for="(row, index) in board" :key="index" style="display: flex">
     <button

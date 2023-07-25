@@ -64,13 +64,21 @@ socket.on("game-join-failed", function ({ message }) {
 });
 
 socket.on("game-move-success", function ({ game: newGame }) {
-  console.log("game-move-success *************", newGame);
+  console.log("game-move-success", newGame);
   state.game = newGame;
   state.chess = new Chess(newGame.fen);
 });
 
 socket.on("game-move-failed", function ({ message }) {
   console.log("game-move-failed", message);
+});
+
+socket.on("game-checkmate", function () {
+  console.log("GAME CHECKMATE *************");
+});
+
+socket.on("game-draw", function () {
+  console.log("GAME DRAW *************");
 });
 
 export default socket;
