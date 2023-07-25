@@ -17,6 +17,10 @@ onUnmounted(function () {
 function join() {
   socket.emit("game-join", { gameId: route.params.id });
 }
+
+function onQuitGame() {
+  socket.emit("game-quit", { gameId: route.params.id });
+}
 </script>
 
 <template>
@@ -27,6 +31,8 @@ function join() {
   </div>
 
   <div v-if="state.game">
+    <button @click="onQuitGame">Quit game</button>
+
     <div v-if="state.game.status === 'WAITING'">
       <p>Waiting for your opponent ...</p>
     </div>

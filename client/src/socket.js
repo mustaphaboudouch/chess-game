@@ -73,6 +73,17 @@ socket.on("game-move-failed", function ({ message }) {
   console.log("game-move-failed", message);
 });
 
+socket.on("game-quit-success", function () {
+  console.log("game-quit-failed");
+  state.game = null;
+  state.chess = new Chess();
+  router.push("/game");
+});
+
+socket.on("game-quit-failed", function () {
+  console.log("game-quit-failed");
+});
+
 socket.on("game-checkmate", function () {
   console.log("GAME CHECKMATE *************");
 });

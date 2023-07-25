@@ -19,7 +19,7 @@ const gameSchema = mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['WAITING', 'PLAYING', 'DONE'],
+			enum: ['WAITING', 'PLAYING', 'DONE', 'CANCELED'],
 			default: 'WAITING',
 		},
 		fen: {

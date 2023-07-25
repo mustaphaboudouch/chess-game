@@ -202,12 +202,14 @@ io.on('connection', async function (socket) {
 				throw new Error('Illegal move');
 			}
 
+			// TODO: to handle
 			if (chess.isCheckmate()) {
 				socket.to(gameId).emit('game-checkmate');
 				socket.emit('game-checkmate');
 				return;
 			}
 
+			// TODO: to handle
 			if (chess.isDraw()) {
 				socket.to(gameId).emit('game-draw');
 				socket.emit('game-draw');
@@ -224,6 +226,23 @@ io.on('connection', async function (socket) {
 			socket.emit('game-move-success', { game });
 		} catch (error) {
 			socket.emit('game-move-failed', { message: error.message });
+		}
+	});
+
+	/**
+	 * Quit a game
+	 */
+	socket.on('game-quit', async function ({ gameId }) {
+		try {
+			await Game.findByIdAndUpdate(gameId, {
+				status: 'CANCELED',
+			});
+
+			socket.to(gameId).emit('game-quit-success');
+			socket.emit('game-quit-success');
+			socket.leave(gameId);
+		} catch (error) {
+			socket.emit('game-quit-failed', { message: error.message });
 		}
 	});
 
