@@ -1,19 +1,18 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const http = require('http');
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const { Server } = require('socket.io');
-const { Chess } = require('chess.js');
+const http = require("http");
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const { Server } = require("socket.io");
+const { Chess } = require("chess.js");
 
-const { verifyToken } = require('./lib/token');
-const authRouter = require('./routes/auth');
-const billingRouter = require('./routes/billing');
-const userRouter = require('./routes/user');
-const { webhook } = require('./controllers/billing');
-const User = require('./models/user');
-const Game = require('./models/game');
+const { verifyToken } = require("./lib/token");
+const authRouter = require("./routes/auth");
+const billingRouter = require("./routes/billing");
+const userRouter = require("./routes/user");
+const { webhook } = require("./controllers/billing");
+const Game = require("./models/game");
 
 /**
  * Initialize express app & servers
@@ -23,7 +22,7 @@ const app = express();
 
 const server = http.createServer(app);
 const io = new Server(server, {
-	cors: { origin: '*' },
+  cors: { origin: "*" },
 });
 
 /**
@@ -31,243 +30,197 @@ const io = new Server(server, {
  */
 
 mongoose
-	.connect(process.env.DATABASE_URI, {
-		useNewUrlParser: true,
-		useUnifiedTopology: true,
-	})
-	.then(function () {
-		console.log('💾 Database is connected successfully');
-	})
-	.catch(function (error) {
-		console.error('❌ Database connection failed');
-		console.trace(error);
-	});
+  .connect(process.env.DATABASE_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(function () {
+    console.log("💾 Database is connected successfully");
+  })
+  .catch(function (error) {
+    console.error("❌ Database connection failed");
+    console.trace(error);
+  });
 
 /**
  * Webhooks
  */
 
-app.post('/webhook', express.raw({ type: 'application/json' }), webhook);
+app.post("/webhook", express.raw({ type: "application/json" }), webhook);
 
 /**
  * Middlewares
  */
 
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: "*" }));
 
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 io.use(function (socket, next) {
-	const { token } = socket.handshake.auth;
+  const { token } = socket.handshake.auth;
 
-	if (!token) return next(new Error('Unauthenticated'));
+  if (!token) return next(new Error("Unauthenticated"));
 
-	const [type, encodedToken] = token.split(' ');
-	if (type !== 'Bearer' || !encodedToken)
-		return next(new Error('Unauthenticated'));
+  const [type, encodedToken] = token.split(" ");
+  if (type !== "Bearer" || !encodedToken)
+    return next(new Error("Unauthenticated"));
 
-	const decodedToken = verifyToken(encodedToken);
-	if (!decodedToken) return next(new Error('Unauthenticated'));
+  const decodedToken = verifyToken(encodedToken);
+  if (!decodedToken) return next(new Error("Unauthenticated"));
 
-	socket.user = decodedToken;
-	next();
+  socket.user = decodedToken;
+  next();
 });
 
 /**
  * Routes
  */
 
-app.get('/', function (req, res) {
-	res.send('Chess Game API');
+app.get("/", function (req, res) {
+  res.send("Chess Game API");
 });
-app.use('/', authRouter);
-app.use('/', billingRouter);
-app.use('/', userRouter);
+app.use("/", authRouter);
+app.use("/", billingRouter);
+app.use("/", userRouter);
 
 /**
  * Run socket server
  */
 
-async function getCurrentGame(user) {
-	const game = await Game.findOne({
-		$and: [
-			{ status: { $in: ['WAITING', 'PLAYING'] } },
-			{
-				$or: [{ player: user.id }, { opponent: user.id }],
-			},
-		],
-	});
-	return game;
-}
+io.on("connection", async function (socket) {
+  console.log(`🚀 ${socket.id} user connected successfully`);
 
-async function getStats(userId) {
-	const user = await User.findById(userId);
+  /**
+   * Get current game
+   */
+  const currentGame = await Game.findOne({
+    $and: [
+      { status: { $in: ["WAITING", "PLAYING"] } },
+      {
+        $or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+      },
+    ],
+  });
+  if (currentGame) {
+    socket.join(currentGame._id.toString());
+    socket.emit("game-current", { game: currentGame });
+  }
 
-	const stats = {};
+  /**
+   * Crate new game
+   */
+  socket.on("game-create", async function () {
+    try {
+      const currentGame = await Game.findOne({
+        $and: [
+          { status: { $in: ["WAITING", "PLAYING"] } },
+          {
+            $or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+          },
+        ],
+      });
 
-	// Admin stats
-	if (user?.role === 'ADMIN') {
-		stats.users = {};
-		stats.users.admins = await User.countDocuments({ role: 'ADMIN' });
-		stats.users.players = await User.countDocuments({ role: 'PLAYER' });
+      if (currentGame) {
+        throw new Error("You have already a game");
+      }
 
-		stats.games = {};
-		stats.games.waiting = await Game.countDocuments({ status: 'WAITING' });
-		stats.games.playing = await Game.countDocuments({ status: 'PLAYING' });
-		stats.games.done = await Game.countDocuments({ status: 'DONE' });
-	}
+      const game = await Game.create({
+        player: socket.user.id,
+        status: "WAITING",
+      });
 
-	// Player stats
-	if (user?.role === 'PLAYER') {
-		stats.games = {};
-		stats.games.waiting = await Game.countDocuments({
-			$or: [{ player: userId }, { opponent: userId }],
-			status: 'WAITING',
-		});
-		stats.games.playing = await Game.countDocuments({
-			$or: [{ player: userId }, { opponent: userId }],
-			status: 'PLAYING',
-		});
-		stats.games.done = await Game.countDocuments({
-			$or: [{ player: userId }, { opponent: userId }],
-			status: 'DONE',
-		});
-		stats.games.wins = await Game.countDocuments({
-			$or: [{ player: userId }, { opponent: userId }],
-			winner: userId,
-			status: 'DONE',
-		});
-	}
+      if (!game) {
+        throw new Error("Game not created");
+      }
 
-	return stats;
-}
+      socket.join(game._id.toString());
+      socket.emit("game-create-success", { game });
+    } catch (error) {
+      socket.emit("game-create-failed", { message: error.message });
+    }
+  });
 
-io.on('connection', async function (socket) {
-	console.log(`🚀 ${socket.id} user connected successfully`);
+  /**
+   * Join existing game
+   */
+  socket.on("game-join", async function ({ gameId }) {
+    try {
+      const currentGame = await Game.findOne({
+        $and: [
+          { _id: gameId, status: { $in: ["WAITING", "PLAYING"] } },
+          {
+            $or: [
+              { opponent: null },
+              {
+                $or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+              },
+            ],
+          },
+        ],
+      });
 
-	/**
-	 *
-	 */
-	const game = await getCurrentGame(socket.user);
-	socket.emit('game-current', { game });
+      if (!currentGame) {
+        throw new Error("Game not found");
+      }
 
-	/**
-	 *
-	 */
-	const stats = await getStats(socket.user.id);
-	socket.emit('stats', { stats });
+      if (
+        currentGame.player.toString() !== socket.user.id &&
+        !currentGame.opponent
+      ) {
+        await Game.findByIdAndUpdate(currentGame._id, {
+          opponent: socket.user.id,
+          status: "PLAYING",
+        });
+      }
 
-	/**
-	 *
-	 */
-	socket.on('game-create', async function () {
-		try {
-			const currentGame = await getCurrentGame(socket.user);
+      const game = await Game.findById(currentGame._id);
 
-			if (currentGame) {
-				throw new Error('You have already a game');
-			}
+      socket.join(game._id.toString());
+      socket.to(game._id.toString()).emit("game-join-success", { game });
+      socket.emit("game-join-success", { game });
+    } catch (error) {
+      socket.emit("game-join-failed", { message: error.message });
+    }
+  });
 
-			const game = await Game.create({
-				player: socket.user.id,
-				status: 'WAITING',
-			});
+  /**
+   * Make a move
+   */
+  socket.on("game-move", async function ({ gameId, move }) {
+    try {
+      const currentGame = await Game.findById(gameId);
 
-			if (!game) {
-				throw new Error('Game not created');
-			}
+      if (!currentGame) {
+        throw new Error("Game not found");
+      }
 
-			socket.join(game._id.toString());
-			socket.emit('game-create-success', { game });
-		} catch (error) {
-			return socket.emit('game-create-failed', {
-				message: error.message,
-			});
-		}
-	});
+      const chess = new Chess(currentGame.fen);
+      const isMoveLeggal = chess.move(move);
 
-	/**
-	 *
-	 */
-	socket.on('game-join', async function ({ gameId }) {
-		try {
-			const game = await Game.findById(gameId);
+      if (!isMoveLeggal) {
+        throw new Error("Illegal move");
+      }
 
-			if (!game) {
-				throw new Error('Game not found');
-			}
+      await Game.findByIdAndUpdate(currentGame._id, {
+        fen: chess.fen(),
+      });
 
-			if (game.player.toString() === socket.user.id) {
-				socket.join(gameId);
-				socket.to(gameId).emit('game-join-success', { game });
-				socket.emit('game-join-success', { game });
-				return;
-			}
+      const game = await Game.findById(currentGame._id);
 
-			await Game.findByIdAndUpdate(game, {
-				opponent: socket.user.id,
-				status: 'PLAYING',
-			});
+      socket.to(gameId).emit("game-move-success", { game });
+      socket.emit("game-move-success", { game });
+    } catch (error) {
+      socket.emit("game-move-failed", { message: error.message });
+    }
+  });
 
-			const updatedGame = await Game.findById(gameId);
-
-			socket.join(gameId);
-			socket.to(gameId).emit('game-join-success', { game: updatedGame });
-			socket.emit('game-join-success', { game: updatedGame });
-		} catch (error) {
-			return socket.emit('game-join-failed', {
-				message: error.message,
-			});
-		}
-	});
-
-	/**
-	 *
-	 */
-	socket.on('game-move', async function ({ gameId, move }) {
-		try {
-			const game = await Game.findOne({
-				$and: [
-					{ _id: gameId, status: 'PLAYING' },
-					{
-						$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
-					},
-				],
-			});
-
-			if (!game) {
-				throw new Error('Game not found');
-			}
-
-			const chess = new Chess(game.fen);
-			const isMoveLeggal = chess.move(move);
-
-			if (!isMoveLeggal) {
-				throw new Error('Illegal move');
-			}
-
-			await Game.findByIdAndUpdate(gameId, {
-				fen: chess.fen(),
-			});
-
-			const newGame = await Game.findById(gameId);
-
-			socket.to(gameId).emit('game-move-success', { game: newGame });
-			socket.emit('game-move-success', { game: newGame });
-		} catch (error) {
-			return socket.emit('game-move-failed', {
-				message: error.message,
-			});
-		}
-	});
-
-	/**
-	 *
-	 */
-	socket.on('disconnect', function () {
-		console.log(`💤 ${socket.id} user disconnected successfully`);
-	});
+  /**
+   * User disconnect
+   */
+  socket.on("disconnect", function () {
+    console.log(`💤 ${socket.id} user disconnected successfully`);
+  });
 });
 
 /**
@@ -277,5 +230,5 @@ io.on('connection', async function (socket) {
 const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, function () {
-	console.log(`🚀 HTTP server is running on port ${PORT}`);
+  console.log(`🚀 HTTP server is running on port ${PORT}`);
 });
