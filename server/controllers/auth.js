@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const { buildToken } = require('../lib/token');
 
@@ -9,7 +10,7 @@ async function signUp(req, res) {
 		const user = await User.create({
 			username: req.body.username,
 			email: req.body.email,
-			password: req.body.password,
+			password: bcrypt.hashSync(req.body.password, 10),
 			role: 'PLAYER',
 			score: 100,
 		});
@@ -28,7 +29,12 @@ async function signIn(req, res) {
 	try {
 		const user = await User.findOne({ where: { email: req.body.email } });
 
-		if (!user || user.password !== req.body.password) {
+		const passwordMatch = await bcrypt.compare(
+			req.body.password,
+			user.password,
+		);
+
+		if (!user || !passwordMatch) {
 			return res.status(401).json({ message: 'Invalid credentials' });
 		}
 
