@@ -16,6 +16,7 @@ const User = require('./models/user');
 const Game = require('./models/game');
 const { generateCode, elo } = require('./lib/utils');
 const sequelize = require('./lib/sequelize');
+const { getSubscriptionPlan } = require('./lib/subscription');
 
 /**
  * Initialize express app & servers
@@ -147,6 +148,43 @@ async function decrementScore(userId) {
 	}
 }
 
+async function countTodayGames(userId) {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const tomorrow = new Date(today);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+
+	const gamesCount = await Game.countDocuments({
+		$and: [
+			{
+				opponentId: { $exists: true, $ne: null },
+				createdAt: { $gte: today, $lt: tomorrow },
+			},
+			{
+				$or: [{ playerId: userId }, { opponentId: userId }],
+			},
+		],
+	});
+
+	return gamesCount;
+}
+
+async function isAllowedToPlay(userId) {
+	const user = await User.findByPk(userId);
+	if (user.role === 'ADMIN') {
+		return true;
+	}
+
+	const plan = getSubscriptionPlan(user);
+	if (plan === 'PRO') {
+		return true;
+	}
+
+	const countGames = await countTodayGames(userId);
+	return countGames < 5;
+}
+
 io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
 
@@ -174,6 +212,11 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-create', async function ({ visibility }) {
 		try {
+			const isAllowed = await isAllowedToPlay(socket.user.id);
+			if (!isAllowed) {
+				throw new Error('You need to subscribe to play unlimited games');
+			}
+
 			const currentGame = await Game.findOne({
 				$and: [
 					{ status: { $in: ['WAITING', 'PLAYING'] } },
@@ -224,6 +267,11 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-join-public', async function ({ gameId }) {
 		try {
+			const isAllowed = await isAllowedToPlay(socket.user.id);
+			if (!isAllowed) {
+				throw new Error('You need to subscribe to play unlimited games');
+			}
+
 			const hasGame = await Game.findOne({
 				_id: { $ne: gameId },
 				playerId: socket.user.id,
@@ -285,6 +333,11 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-join-private', async function ({ code }) {
 		try {
+			const isAllowed = await isAllowedToPlay(socket.user.id);
+			if (!isAllowed) {
+				throw new Error('You need to subscribe to play unlimited games');
+			}
+
 			const hasGame = await Game.findOne({
 				code: { $ne: code },
 				playerId: socket.user.id,
