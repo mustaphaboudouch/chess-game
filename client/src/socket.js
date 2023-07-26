@@ -91,12 +91,16 @@ socket.on("game-quit-failed", function () {
   console.log("game-quit-failed");
 });
 
-socket.on("game-checkmate", function () {
-  console.log("GAME CHECKMATE *************");
+socket.on("game-checkmate", function ({ game: newGame }) {
+  console.log("game-checkmate", newGame);
+  state.game = newGame;
+  state.chess = new Chess(newGame.fen);
 });
 
-socket.on("game-draw", function () {
-  console.log("GAME DRAW *************");
+socket.on("game-draw", function ({ game: newGame }) {
+  console.log("game-draw");
+  state.game = newGame;
+  state.chess = new Chess(newGame.fen);
 });
 
 export default socket;

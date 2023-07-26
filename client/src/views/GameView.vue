@@ -37,7 +37,7 @@ function onJoinPublicGame(gameId) {
     <button type="submit">Join private game</button>
   </form>
 
-  <div v-if="state.game">
+  <div v-if="state.game && (state.game.status === 'WAITING' || state.game.status === 'PLAYING')">
     <RouterLink to="/board">Go to game</RouterLink>
   </div>
 

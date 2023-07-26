@@ -298,17 +298,33 @@ io.on('connection', async function (socket) {
 				throw new Error('Illegal move');
 			}
 
-			// TODO: to handle
+			// check if is checkmate
 			if (chess.isCheckmate()) {
-				socket.to(gameId).emit('game-checkmate');
-				socket.emit('game-checkmate');
+				await Game.findByIdAndUpdate(currentGame._id, {
+					fen: chess.fen(),
+					status: 'DONE',
+					winner:
+						chess.turn() === 'b' ? currentGame.player : currentGame.opponent,
+				});
+
+				const game = await Game.findById(currentGame._id);
+
+				socket.to(gameId).emit('game-checkmate', { game });
+				socket.emit('game-checkmate', { game });
 				return;
 			}
 
-			// TODO: to handle
+			// check if is draw
 			if (chess.isDraw()) {
-				socket.to(gameId).emit('game-draw');
-				socket.emit('game-draw');
+				await Game.findByIdAndUpdate(currentGame._id, {
+					fen: chess.fen(),
+					status: 'DONE',
+				});
+
+				const game = await Game.findById(currentGame._id);
+
+				socket.to(gameId).emit('game-draw', { game });
+				socket.emit('game-draw', { game });
 				return;
 			}
 
