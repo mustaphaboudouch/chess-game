@@ -44,6 +44,7 @@ async function onSubscribe() {
 
   <div v-if="!!user">
     <ul>
+      <li>Id : {{ user?.id }}</li>
       <li>Username : {{ user?.username }}</li>
       <li>Email : {{ user?.email }}</li>
       <li>Role : {{ user?.role }}</li>

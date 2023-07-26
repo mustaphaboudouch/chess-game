@@ -50,8 +50,8 @@ function onClickPiece(piece, position) {
   const moves = state.chess.moves({ square: position });
 
   const isMyTurn =
-    (user.value.id === props.game.player && state.chess.turn() === "w") ||
-    (user.value.id === props.game.opponent && state.chess.turn() === "b");
+    (user.value.id === props.game.playerId && state.chess.turn() === "w") ||
+    (user.value.id === props.game.opponentId && state.chess.turn() === "b");
 
   if (!isMyTurn) return;
 

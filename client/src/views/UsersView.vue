@@ -29,8 +29,8 @@ async function onDeleteUser(userId) {
 
   <div v-for="(user, index) in users" :key="index">
     <div>
-      <RouterLink :to="`/users/${user._id}`">{{ user.username }}</RouterLink>
-      <button @click="onDeleteUser(user._id)">DELETE</button>
+      <RouterLink :to="`/users/${user.id}`">{{ user.username }}</RouterLink>
+      <button @click="onDeleteUser(user.id)">DELETE</button>
     </div>
   </div>
 </template>

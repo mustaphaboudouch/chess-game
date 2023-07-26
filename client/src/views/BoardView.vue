@@ -41,12 +41,12 @@ function onQuitGame() {
 
     <div v-if="state.game.status === 'PLAYING' || state.game.status === 'DONE'">
       <div v-if="state.game.status === 'DONE'">
-        <div v-if="!state.game.winner">
+        <div v-if="!state.game.winnerId">
           <p>DRAW !!!!!</p>
         </div>
-        <div v-if="state.game.winner">
-          <p v-if="user.id === state.game.winner.toString()">You win !!!</p>
-          <p v-if="user.id !== state.game.winner.toString()">You lose !!!</p>
+        <div v-if="state.game.winnerId">
+          <p v-if="user.id === state.game.winnerId">You win !!!</p>
+          <p v-if="user.id !== state.game.winnerId">You lose !!!</p>
           <RouterLink to="/game">Play another game</RouterLink>
         </div>
       </div>
