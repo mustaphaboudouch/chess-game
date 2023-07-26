@@ -12,8 +12,9 @@ const authRouter = require('./routes/auth');
 const billingRouter = require('./routes/billing');
 const userRouter = require('./routes/user');
 const { webhook } = require('./controllers/billing');
+const User = require('./models/user');
 const Game = require('./models/game');
-const { generateCode } = require('./lib/utils');
+const { generateCode, elo } = require('./lib/utils');
 const sequelize = require('./lib/sequelize');
 
 /**
@@ -32,7 +33,7 @@ const io = new Server(server, {
  */
 
 mongoose
-	.connect(process.env.DATABASE_URI, {
+	.connect(process.env.MONGODB_DATABASE_URI, {
 		useNewUrlParser: true,
 		useUnifiedTopology: true,
 	})
@@ -40,9 +41,8 @@ mongoose
 		console.log('💾 MongoDB database is connected successfully');
 	})
 	.catch(function (error) {
-		console.log(error.message);
-		// console.error('❌ MongoDB database connection failed', error.message);
-		// console.trace(error);
+		console.error('❌ MongoDB database connection failed', error.message);
+		console.trace(error);
 	});
 
 /**
@@ -56,7 +56,7 @@ sequelize
 	})
 	.catch((error) => {
 		console.error('❌ Postgres database connection failed');
-		// console.trace(error);
+		console.trace(error);
 	});
 
 sequelize.sync().then(() => {
@@ -114,6 +114,37 @@ async function getOnGoingGames(user) {
 		status: 'WAITING',
 		visibility: 'PUBLIC',
 	});
+}
+
+async function updateScores(game) {
+	const player = await User.findByPk(game.playerId);
+	const opponent = await User.findByPk(game.opponentId);
+
+	const [winnerScore, loserScore] = elo(
+		game.winnerId === player.id ? player.score : opponent.score,
+		game.winnerId !== player.id ? player.score : opponent.score,
+	);
+
+	player.set({
+		score: game.winnerId === player.id ? winnerScore : loserScore,
+	});
+	await player.save();
+
+	opponent.set({
+		score: game.winnerId === opponent.id ? winnerScore : loserScore,
+	});
+	await opponent.save();
+}
+
+async function decrementScore(userId) {
+	const user = await User.findByPk(userId);
+
+	if (user.score >= 10) {
+		await user.decrement('score', { by: 10 });
+	} else {
+		user.set({ score: 0 });
+		await user.save();
+	}
 }
 
 io.on('connection', async function (socket) {
@@ -348,6 +379,7 @@ io.on('connection', async function (socket) {
 				});
 
 				const game = await Game.findById(currentGame._id);
+				updateScores(game);
 
 				socket.to(gameId).emit('game-checkmate', { game });
 				socket.emit('game-checkmate', { game });
@@ -386,6 +418,26 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-quit', async function ({ gameId }) {
 		try {
+			const currentGame = await Game.findOne({
+				$and: [
+					{
+						_id: gameId,
+						status: { $in: ['WAITING', 'PLAYING'] },
+					},
+					{
+						$or: [{ playerId: socket.user.id }, { opponentId: socket.user.id }],
+					},
+				],
+			});
+
+			if (!currentGame) {
+				throw new Error('Game not found');
+			}
+
+			if (currentGame.status === 'PLAYING') {
+				decrementScore(socket.user.id);
+			}
+
 			await Game.findByIdAndUpdate(gameId, {
 				status: 'CANCELED',
 			});

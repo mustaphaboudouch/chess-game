@@ -6,8 +6,9 @@ module.exports = sequelize.define(
 	{
 		username: {
 			type: DataTypes.STRING,
+			unique: true,
 			validate: {
-				len: [8, 32],
+				len: [3, 32],
 			},
 		},
 		email: {
