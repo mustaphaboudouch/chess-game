@@ -14,6 +14,7 @@ const userRouter = require('./routes/user');
 const { webhook } = require('./controllers/billing');
 const Game = require('./models/game');
 const { generateCode } = require('./lib/utils');
+const sequelize = require('./lib/sequelize');
 
 /**
  * Initialize express app & servers
@@ -36,12 +37,31 @@ mongoose
 		useUnifiedTopology: true,
 	})
 	.then(function () {
-		console.log('💾 Database is connected successfully');
+		console.log('💾 MongoDB database is connected successfully');
 	})
 	.catch(function (error) {
-		console.error('❌ Database connection failed');
-		console.trace(error);
+		console.log(error.message);
+		// console.error('❌ MongoDB database connection failed', error.message);
+		// console.trace(error);
 	});
+
+/**
+ * Postgres connection
+ */
+
+sequelize
+	.authenticate()
+	.then(() => {
+		console.log('💾 Postgres database is connected successfully');
+	})
+	.catch((error) => {
+		console.error('❌ Postgres database connection failed');
+		// console.trace(error);
+	});
+
+sequelize.sync().then(() => {
+	console.log('Models created successfully');
+});
 
 /**
  * Webhooks
@@ -106,7 +126,7 @@ io.on('connection', async function (socket) {
 		$and: [
 			{ status: { $in: ['WAITING', 'PLAYING'] } },
 			{
-				$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+				$or: [{ playerId: socket.user.id }, { opponentId: socket.user.id }],
 			},
 		],
 	});
@@ -119,7 +139,7 @@ io.on('connection', async function (socket) {
 	socket.emit('game-list', { games });
 
 	/**
-	 * Crate new game
+	 * Create new game
 	 */
 	socket.on('game-create', async function ({ visibility }) {
 		try {
@@ -127,7 +147,7 @@ io.on('connection', async function (socket) {
 				$and: [
 					{ status: { $in: ['WAITING', 'PLAYING'] } },
 					{
-						$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+						$or: [{ playerId: socket.user.id }, { opponentId: socket.user.id }],
 					},
 				],
 			});
@@ -147,7 +167,7 @@ io.on('connection', async function (socket) {
 			}
 
 			const game = await Game.create({
-				player: socket.user.id,
+				playerId: socket.user.id,
 				status: 'WAITING',
 				visibility,
 				code,
@@ -175,7 +195,7 @@ io.on('connection', async function (socket) {
 		try {
 			const hasGame = await Game.findOne({
 				_id: { $ne: gameId },
-				player: socket.user.id,
+				playerId: socket.user.id,
 				status: { $in: ['WAITING', 'PLAYING'] },
 			});
 
@@ -192,9 +212,12 @@ io.on('connection', async function (socket) {
 					},
 					{
 						$or: [
-							{ opponent: null },
+							{ opponentId: null },
 							{
-								$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+								$or: [
+									{ playerId: socket.user.id },
+									{ opponentId: socket.user.id },
+								],
 							},
 						],
 					},
@@ -205,12 +228,9 @@ io.on('connection', async function (socket) {
 				throw new Error('Game not found');
 			}
 
-			if (
-				currentGame.player.toString() !== socket.user.id &&
-				!currentGame.opponent
-			) {
+			if (currentGame.playerId !== socket.user.id && !currentGame.opponentId) {
 				await Game.findByIdAndUpdate(currentGame._id, {
-					opponent: socket.user.id,
+					opponentId: socket.user.id,
 					status: 'PLAYING',
 				});
 			}
@@ -236,7 +256,7 @@ io.on('connection', async function (socket) {
 		try {
 			const hasGame = await Game.findOne({
 				code: { $ne: code },
-				player: socket.user.id,
+				playerId: socket.user.id,
 				status: { $in: ['WAITING', 'PLAYING'] },
 			});
 
@@ -253,9 +273,12 @@ io.on('connection', async function (socket) {
 					},
 					{
 						$or: [
-							{ opponent: null },
+							{ opponentId: null },
 							{
-								$or: [{ player: socket.user.id }, { opponent: socket.user.id }],
+								$or: [
+									{ playerId: socket.user.id },
+									{ opponentId: socket.user.id },
+								],
 							},
 						],
 					},
@@ -266,12 +289,9 @@ io.on('connection', async function (socket) {
 				throw new Error('Game not found');
 			}
 
-			if (
-				currentGame.player.toString() !== socket.user.id &&
-				!currentGame.opponent
-			) {
+			if (currentGame.playerId !== socket.user.id && !currentGame.opponentId) {
 				await Game.findByIdAndUpdate(currentGame._id, {
-					opponent: socket.user.id,
+					opponentId: socket.user.id,
 					status: 'PLAYING',
 				});
 			}
@@ -304,10 +324,8 @@ io.on('connection', async function (socket) {
 			const chess = new Chess(currentGame.fen);
 
 			if (
-				(chess.turn() === 'w' &&
-					currentGame.player.toString() !== socket.user.id) ||
-				(chess.turn() === 'b' &&
-					currentGame.opponent.toString() !== socket.user.id)
+				(chess.turn() === 'w' && currentGame.playerId !== socket.user.id) ||
+				(chess.turn() === 'b' && currentGame.opponentId !== socket.user.id)
 			) {
 				throw new Error("It's not your turn");
 			}
@@ -323,8 +341,10 @@ io.on('connection', async function (socket) {
 				await Game.findByIdAndUpdate(currentGame._id, {
 					fen: chess.fen(),
 					status: 'DONE',
-					winner:
-						chess.turn() === 'b' ? currentGame.player : currentGame.opponent,
+					winnerId:
+						chess.turn() === 'b'
+							? currentGame.playerId
+							: currentGame.opponentId,
 				});
 
 				const game = await Game.findById(currentGame._id);
