@@ -173,6 +173,16 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-join-public', async function ({ gameId }) {
 		try {
+			const hasGame = await Game.findOne({
+				_id: { $ne: gameId },
+				player: socket.user.id,
+				status: { $in: ['WAITING', 'PLAYING'] },
+			});
+
+			if (hasGame) {
+				throw new Error('You have already a game');
+			}
+
 			const currentGame = await Game.findOne({
 				$and: [
 					{
@@ -224,6 +234,16 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('game-join-private', async function ({ code }) {
 		try {
+			const hasGame = await Game.findOne({
+				code: { $ne: code },
+				player: socket.user.id,
+				status: { $in: ['WAITING', 'PLAYING'] },
+			});
+
+			if (hasGame) {
+				throw new Error('You have already a game');
+			}
+
 			const currentGame = await Game.findOne({
 				$and: [
 					{
