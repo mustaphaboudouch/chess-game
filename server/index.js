@@ -93,7 +93,6 @@ async function getOnGoingGames(user) {
 	return Game.find({
 		status: 'WAITING',
 		visibility: 'PUBLIC',
-		// TODO: player != user.id
 	});
 }
 
@@ -283,6 +282,16 @@ io.on('connection', async function (socket) {
 			}
 
 			const chess = new Chess(currentGame.fen);
+
+			if (
+				(chess.turn() === 'w' &&
+					currentGame.player.toString() !== socket.user.id) ||
+				(chess.turn() === 'b' &&
+					currentGame.opponent.toString() !== socket.user.id)
+			) {
+				throw new Error("It's not your turn");
+			}
+
 			const isMoveLeggal = chess.move(move);
 
 			if (!isMoveLeggal) {
