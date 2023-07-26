@@ -11,7 +11,7 @@ async function signUp(req, res) {
 			email: req.body.email,
 			password: req.body.password,
 			role: 'PLAYER',
-			score: 0,
+			score: 100,
 		});
 
 		const token = buildToken(user);
@@ -26,9 +26,7 @@ async function signUp(req, res) {
  */
 async function signIn(req, res) {
 	try {
-		const user = await User.findOne({ email: req.body.email }).select(
-			'+password',
-		);
+		const user = await User.findOne({ where: { email: req.body.email } });
 
 		if (!user || user.password !== req.body.password) {
 			return res.status(401).json({ message: 'Invalid credentials' });
@@ -46,7 +44,7 @@ async function signIn(req, res) {
  */
 async function me(req, res) {
 	try {
-		const user = await User.findById(res.locals.user.id);
+		const user = await User.findByPk(res.locals.user.id);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -63,11 +61,14 @@ async function me(req, res) {
  */
 async function updateProfile(req, res) {
 	try {
-		await User.findByIdAndUpdate(res.locals.user.id, {
-			username: req.body.username,
-		});
+		const user = await User.findByPk(res.locals.user.id);
 
-		const user = await User.findById(res.locals.user.id);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		user.set({ username: req.body.username });
+		await user.save();
 
 		res.status(201).json(user);
 	} catch (error) {

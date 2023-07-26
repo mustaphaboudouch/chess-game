@@ -4,7 +4,7 @@ const User = require('../models/user');
  * Check if user is subscribed in PRO plan
  */
 async function isSubscribed(req, res, next) {
-	const user = await User.findById(res.locals.user.id);
+	const user = await User.findByPk(res.locals.user.id);
 
 	if (!user) {
 		return res.status(404).json({ message: 'User not found' });

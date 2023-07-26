@@ -2,19 +2,16 @@ const mongoose = require('mongoose');
 
 const gameSchema = mongoose.Schema(
 	{
-		player: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'User',
+		playerId: {
+			type: Number,
 			required: true,
 		},
-		opponent: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'User',
+		opponentId: {
+			type: Number,
 			default: null,
 		},
-		winner: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'User',
+		winnerId: {
+			type: Number,
 			default: null,
 		},
 		status: {
@@ -35,7 +32,6 @@ const gameSchema = mongoose.Schema(
 			type: String,
 			minlength: 6,
 			maxlength: 6,
-			unique: true,
 			default: null,
 		},
 	},

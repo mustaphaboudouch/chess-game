@@ -1,43 +1,64 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../lib/sequelize');
 
-const userSchema = mongoose.Schema(
+module.exports = sequelize.define(
+	'User',
 	{
 		username: {
-			type: String,
-			required: [true, 'Username is required'],
-			unique: [true, 'Username must be unique'],
-		},
-		email: {
-			type: String,
-			required: [true, 'Email is required'],
-			unique: [true, 'Email must be unique'],
-		},
-		password: {
-			type: String,
-			required: [true, 'Password is required'],
-			minlength: [8, 'Password must be at least 8 characters long'],
-			select: false,
-		},
-		role: {
-			type: String,
-			enum: {
-				values: ['ADMIN', 'PLAYER'],
-				message: 'Invalid role',
+			type: DataTypes.STRING,
+			validate: {
+				len: [8, 32],
 			},
 		},
-		score: {
-			type: Number,
-			min: [0, 'Score must be greater than or equal to 0'],
-			default: 0,
+		email: {
+			type: DataTypes.STRING,
+			unique: true,
+			allowNull: false,
+			validate: {
+				isEmail: true,
+			},
 		},
-
-		// Stripe fields
-		stripeCustomerId: { type: String, required: false },
-		stripeSubscriptionId: { type: String, required: false },
-		stripePriceId: { type: String, required: false },
-		stripeCurrentPeriodEnd: { type: Date, required: false },
+		password: {
+			type: DataTypes.STRING,
+			allowNull: false,
+			validate: {
+				len: [8, 32],
+				// is: /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/i,
+			},
+		},
+		role: {
+			type: DataTypes.ENUM('ADMIN', 'PLAYER'),
+			allowNull: false,
+			defaultValue: 'PLAYER',
+		},
+		score: {
+			type: DataTypes.INTEGER,
+			allowNull: false,
+			defaultValue: 100,
+			validate: {
+				min: 0,
+			},
+		},
+		// stripe fields
+		stripeCustomerId: {
+			type: DataTypes.STRING,
+			defaultValue: null,
+		},
+		stripeSubscriptionId: {
+			type: DataTypes.STRING,
+			defaultValue: null,
+		},
+		stripePriceId: {
+			type: DataTypes.STRING,
+			defaultValue: null,
+		},
+		stripeCurrentPeriodEnd: {
+			type: DataTypes.DATE,
+			defaultValue: null,
+		},
 	},
-	{ timestamps: true },
+	{
+		tableName: 'users',
+		paranoid: true,
+	},
 );
-
-module.exports = mongoose.model('User', userSchema);

@@ -5,8 +5,10 @@ const User = require('../models/user');
  */
 async function getAll(req, res) {
 	try {
-		const users = await User.find({
-			role: 'PLAYER',
+		const users = await User.findAll({
+			where: {
+				role: 'PLAYER',
+			},
 		});
 
 		res.status(200).json(users);
@@ -20,7 +22,7 @@ async function getAll(req, res) {
  */
 async function getById(req, res) {
 	try {
-		const user = await User.findById(req.params.id);
+		const user = await User.findByPk(req.params.id);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -37,10 +39,18 @@ async function getById(req, res) {
  */
 async function remove(req, res) {
 	try {
-		await User.findByIdAndDelete(req.params.id);
+		const user = await User.findByPk(req.params.id);
 
-		const users = await User.find({
-			role: 'PLAYER',
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		await user.destroy();
+
+		const users = await User.findAll({
+			where: {
+				role: 'PLAYER',
+			},
 		});
 
 		res.status(200).json(users);

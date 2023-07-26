@@ -7,7 +7,7 @@ const { getSubscriptionPlan } = require('../lib/subscription');
  */
 async function subscribe(req, res) {
 	try {
-		const user = await User.findById(res.locals.user.id);
+		const user = await User.findByPk(res.locals.user.id);
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -77,12 +77,17 @@ async function webhook(req, res) {
 
 		// Update the user stripe into in our database
 		// Since this is the initial subscription, we need to update the subscription id and customer id
-		await User.findByIdAndUpdate(session?.metadata?.userId, {
+		const user = await User.findByPk(session?.metadata?.userId);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		user.set({
 			stripeSubscriptionId: subscription.id,
 			stripeCustomerId: subscription.customer,
 			stripePriceId: subscription.items.data[0].price.id,
 			stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
 		});
+		await user.save();
 	}
 
 	if (event.type === 'invoice.payment_succeeded') {
@@ -92,15 +97,17 @@ async function webhook(req, res) {
 		);
 
 		// Update the price id and set the new period end
-		await User.findOneAndUpdate(
-			{ stripeSubscriptionId: subscription.id },
-			{
-				stripePriceId: subscription.items.data[0].price.id,
-				stripeCurrentPeriodEnd: new Date(
-					subscription.current_period_end * 1000,
-				),
-			},
-		);
+		const user = await User.findOne({
+			where: { stripeSubscriptionId: subscription.id },
+		});
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		user.set({
+			stripePriceId: subscription.items.data[0].price.id,
+			stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+		});
+		await user.save();
 	}
 
 	res.status(200).end();
