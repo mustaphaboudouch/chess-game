@@ -49,6 +49,15 @@ socket.on("connect_error", function (error) {
 });
 
 /**
+ * Stats events
+ */
+
+socket.on("stats", function ({ stats }) {
+  console.log("stats", stats);
+  state.stats = stats;
+});
+
+/**
  * Game events
  */
 
@@ -129,7 +138,7 @@ socket.on("game-cancel-success", function () {
   console.log("game-cancel-success");
   state.game = null;
   state.chess = new Chess();
-  router.push("/game");
+  // router.push("/game");
 });
 
 socket.on("game-cancel-failed", function ({ message }) {
@@ -140,7 +149,7 @@ socket.on("game-delete-success", function () {
   console.log("game-delete-success");
   state.game = null;
   state.chess = new Chess();
-  router.push("/game");
+  // router.push("/game");
 });
 
 socket.on("game-delete-failed", function ({ message }) {

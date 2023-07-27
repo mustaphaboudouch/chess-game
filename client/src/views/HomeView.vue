@@ -1,29 +1,30 @@
 <script setup>
+import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
+import socket, { state } from "../socket";
 import { useAuthStore } from "../stores/auth";
-import { useSocketStore } from "../stores/socket";
+import AdminStats from "../components/ui/AdminStats.vue";
+import PlayerStats from "../components/ui/PlayerStats.vue";
 
 const authStore = useAuthStore();
-const socketStore = useSocketStore();
-
 const { user } = storeToRefs(authStore);
-const { stats } = storeToRefs(socketStore);
+
+onMounted(function () {
+  socket.connect();
+});
+
+onUnmounted(function () {
+  socket.disconnect();
+});
 </script>
 
 <template>
   <h1>Dashboard Page</h1>
 
-  <div v-if="stats">
-    <ul v-if="user.role === 'ADMIN'">
-      <li>Users (ADMIN): {{ stats.users.admins }}</li>
-      <li>Users (PLAYER): {{ stats.users.players }}</li>
-    </ul>
-
-    <ul>
-      <li>Games (WAITING): {{ stats.games.playing }}</li>
-      <li>Games (PLAYING): {{ stats.games.playing }}</li>
-      <li>Games (DONE): {{ stats.games.playing }}</li>
-      <li v-if="user.role === 'PLAYER'">Games (WINS): {{ stats.games.wins }}</li>
-    </ul>
+  <div v-if="user.role === 'ADMIN'">
+    <AdminStats :stats="state.stats" />
+  </div>
+  <div v-else>
+    <PlayerStats :stats="state.stats" />
   </div>
 </template>

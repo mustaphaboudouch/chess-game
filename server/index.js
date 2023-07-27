@@ -17,6 +17,14 @@ const Game = require('./models/game');
 const { generateCode, elo } = require('./lib/utils');
 const sequelize = require('./lib/sequelize');
 const { getSubscriptionPlan } = require('./lib/subscription');
+const {
+	calculateAdminStats,
+	generateLast30DaysList,
+	getAdminStatsByDay,
+	countPlayers,
+	calculatePlayerStats,
+	getPlayerStatsByDay,
+} = require('./stats');
 
 /**
  * Initialize express app & servers
@@ -213,6 +221,21 @@ async function getAdminGames(statuses) {
 	return games;
 }
 
+async function getAdminStats() {
+	return {
+		gameStats: await calculateAdminStats(),
+		userStats: { PLAYER: await countPlayers() },
+		gamesByDay: await generateLast30DaysList(await getAdminStatsByDay()),
+	};
+}
+
+async function getPlayerStats(userId) {
+	return {
+		gameStats: await calculatePlayerStats(userId),
+		gamesByDay: generateLast30DaysList(await getPlayerStatsByDay(userId)),
+	};
+}
+
 io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
 
@@ -222,6 +245,16 @@ io.on('connection', async function (socket) {
 	if (socket.user.role === 'ADMIN') {
 		socket.join('admin');
 	}
+
+	/**
+	 * Get user stats
+	 */
+	socket.emit('stats', {
+		stats:
+			socket.user.role === 'ADMIN'
+				? await getAdminStats()
+				: await getPlayerStats(socket.user.id),
+	});
 
 	/**
 	 * Get current game
@@ -316,6 +349,13 @@ io.on('connection', async function (socket) {
 			if (user.role === 'ADMIN') {
 				socket.emit('game-admin-list', { games: allGames });
 			}
+
+			const adminStats = await getAdminStats();
+			const playerStats = await getPlayerStats(socket.user.id);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			});
 		} catch (error) {
 			socket.emit('game-create-failed', { message: error.message });
 		}
@@ -388,6 +428,17 @@ io.on('connection', async function (socket) {
 			if (user.role === 'ADMIN') {
 				socket.emit('game-admin-list', { games: allGames });
 			}
+
+			const adminStats = await getAdminStats();
+			const playerStats = await getPlayerStats(socket.user.id);
+			const opponentStats = await getPlayerStats(game.playerId);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.to(game._id.toString()).emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : opponentStats,
+			});
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			});
 		} catch (error) {
 			socket.emit('game-join-failed', { message: error.message });
 		}
@@ -460,6 +511,17 @@ io.on('connection', async function (socket) {
 			if (user.role === 'ADMIN') {
 				socket.emit('game-admin-list', { games: allGames });
 			}
+
+			const adminStats = await getAdminStats();
+			const playerStats = await getPlayerStats(socket.user.id);
+			const opponentStats = await getPlayerStats(game.playerId);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.to(game._id.toString()).emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : opponentStats,
+			});
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			});
 		} catch (error) {
 			socket.emit('game-join-failed', { message: error.message });
 		}
@@ -514,6 +576,19 @@ io.on('connection', async function (socket) {
 					socket.emit('game-admin-list', { games: allGames });
 				}
 
+				const adminStats = await getAdminStats();
+				const playerStats = await getPlayerStats(socket.user.id);
+				const opponentStats = await getPlayerStats(
+					game.playerId === socket.user.id ? game.playerId : game.opponentId,
+				);
+				socket.to('admin').emit('stats', { stats: adminStats });
+				socket.to(game._id.toString()).emit('stats', {
+					stats: socket.user.role === 'ADMIN' ? adminStats : opponentStats,
+				});
+				socket.emit('stats', {
+					stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+				});
+
 				return;
 			}
 
@@ -534,6 +609,19 @@ io.on('connection', async function (socket) {
 				if (user.role === 'ADMIN') {
 					socket.emit('game-admin-list', { games: allGames });
 				}
+
+				const adminStats = await getAdminStats();
+				const playerStats = await getPlayerStats(socket.user.id);
+				const opponentStats = await getPlayerStats(
+					game.playerId === socket.user.id ? game.playerId : game.opponentId,
+				);
+				socket.to('admin').emit('stats', { stats: adminStats });
+				socket.to(game._id.toString()).emit('stats', {
+					stats: socket.user.role === 'ADMIN' ? adminStats : opponentStats,
+				});
+				socket.emit('stats', {
+					stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+				});
 
 				return;
 			}
@@ -594,6 +682,24 @@ io.on('connection', async function (socket) {
 			if (user.role === 'ADMIN') {
 				socket.emit('game-admin-list', { games: allGames });
 			}
+
+			const adminStats = await getAdminStats();
+			const playerStats = await getPlayerStats(socket.user.id);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			});
+
+			if (currentGame.status === 'PLAYING') {
+				const opponentStats = await getPlayerStats(
+					currentGame.playerId === socket.user.id
+						? currentGame.playerId
+						: currentGame.opponentId,
+				);
+				socket.to(currentGame._id.toString()).emit('stats', {
+					stats: socket.user.role === 'ADMIN' ? adminStats : opponentStats,
+				});
+			}
 		} catch (error) {
 			socket.emit('game-quit-failed', { message: error.message });
 		}
@@ -623,6 +729,13 @@ io.on('connection', async function (socket) {
 			const allGames = await getAdminGames(['WAITING', 'PLAYING', 'CANCELED']);
 			socket.to('admin').emit('game-admin-list', { games: allGames });
 			socket.emit('game-admin-list', { games: allGames });
+
+			const adminStats = await getAdminStats();
+			const selfStats = await getPlayerStats(socket.user.id);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : selfStats,
+			});
 		} catch (error) {
 			socket.emit('game-cancel-failed', { message: error.message });
 		}
@@ -655,6 +768,13 @@ io.on('connection', async function (socket) {
 			]);
 			socket.to('admin').emit('game-admin-list', { games: allGames });
 			socket.emit('game-admin-list', { games: allGames });
+
+			const adminStats = await getAdminStats();
+			const playerStats = await getPlayerStats(socket.user.id);
+			socket.to('admin').emit('stats', { stats: adminStats });
+			socket.emit('stats', {
+				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			});
 		} catch (error) {
 			socket.emit('game-delete-failed', { message: error.message });
 		}
