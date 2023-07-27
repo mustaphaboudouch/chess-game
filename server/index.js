@@ -462,7 +462,8 @@ io.on('connection', async function (socket) {
 			socket.to(gameId).emit('game-move-success', { game });
 			socket.emit('game-move-success', { game });
 		} catch (error) {
-			socket.emit('game-move-failed', { message: error.message });
+			const game = await Game.findById(gameId);
+			socket.emit('game-move-failed', { game, message: error.message });
 		}
 	});
 

@@ -2,8 +2,9 @@
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../../stores/auth";
-import socket, { state } from "../../socket";
+import socket, { state, updateBoard } from "../../socket";
 import { fenToArray, cleanPosition } from "../../lib/chess";
+import { Chess } from "chess.js";
 
 const props = defineProps({
   game: Object
@@ -16,7 +17,7 @@ const values = reactive({
   selectedPiece: null,
   targetPosition: null,
   legalMoves: [],
-  showModal: false
+  showPromotionModal: false
 });
 
 const board = computed(function () {
@@ -59,8 +60,13 @@ function onClickPiece(piece, position) {
     values.targetPosition = position;
 
     if (isPromoting({ from: values.selectedPiece.position, to: position })) {
-      values.showModal = true;
+      values.showPromotionModal = true;
     } else {
+      // update move client side
+      const chess = new Chess(props.game.fen);
+      chess.move({ from: values.selectedPiece.position, to: position });
+      updateBoard(chess.fen());
+
       socket.emit("game-move", {
         gameId: state.game._id,
         move: { from: values.selectedPiece.position, to: position }
@@ -76,7 +82,12 @@ function onClickPiece(piece, position) {
 }
 
 function onChoosePiece(piece) {
-  values.showModal = false;
+  values.showPromotionModal = false;
+
+  // update move client side
+  const chess = new Chess(props.game.fen);
+  chess.move({ from: values.selectedPiece.position, to: values.targetPosition, promotion: piece });
+  updateBoard(chess.fen());
 
   socket.emit("game-move", {
     gameId: state.game._id,
@@ -95,7 +106,7 @@ function onChoosePiece(piece) {
 <template>
   <pre>{{ JSON.stringify(props.game, null, 2) }}</pre>
 
-  <div v-if="values.showModal">
+  <div v-if="values.showPromotionModal">
     <form @submit.prevent="onChoosePiece">
       <button @click="onChoosePiece('q')">Q</button>
       <button @click="onChoosePiece('r')">R</button>

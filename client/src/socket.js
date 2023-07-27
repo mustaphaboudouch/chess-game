@@ -18,6 +18,15 @@ const socket = io("http://localhost:3001", {
 });
 
 /**
+ * Actions
+ */
+
+export function updateBoard(fen) {
+  state.game = { ...state.game, fen };
+  state.chess = new Chess(fen);
+}
+
+/**
  * Global events
  */
 
@@ -76,8 +85,10 @@ socket.on("game-move-success", function ({ game: newGame }) {
   state.chess = new Chess(newGame.fen);
 });
 
-socket.on("game-move-failed", function ({ message }) {
+socket.on("game-move-failed", function ({ game: newGame, message }) {
   console.log("game-move-failed", message);
+  state.game = newGame;
+  state.chess = newGame ? new Chess(newGame.fen) : new Chess();
 });
 
 socket.on("game-quit-success", function () {
