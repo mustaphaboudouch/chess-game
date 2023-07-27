@@ -1,4 +1,6 @@
+const { Op } = require('sequelize');
 const { formatDate } = require('./lib/date');
+const sequelize = require('./lib/sequelize');
 const Game = require('./models/game');
 const User = require('./models/user');
 
@@ -238,6 +240,30 @@ async function countPlayers() {
 	});
 }
 
+async function getRegistrationsByDay() {
+	const thirtyDaysAgo = new Date();
+	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+	const playerSubscriptionCount = await User.findAll({
+		attributes: [
+			[sequelize.fn('date_trunc', 'day', sequelize.col('createdAt')), '_id'],
+			[sequelize.fn('count', sequelize.col('id')), 'count'],
+		],
+		where: {
+			role: 'PLAYER',
+			createdAt: {
+				[Op.gte]: thirtyDaysAgo,
+			},
+		},
+		group: [sequelize.fn('date_trunc', 'day', sequelize.col('createdAt'))],
+		raw: true,
+	});
+
+	playerSubscriptionCount.map((p) => (p._id = formatDate(new Date(p._id))));
+
+	return playerSubscriptionCount;
+}
+
 module.exports = {
 	calculateAdminStats,
 	calculatePlayerStats,
@@ -245,4 +271,5 @@ module.exports = {
 	getPlayerStatsByDay,
 	generateLast30DaysList,
 	countPlayers,
+	getRegistrationsByDay,
 };

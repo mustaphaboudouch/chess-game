@@ -24,6 +24,7 @@ const {
 	countPlayers,
 	calculatePlayerStats,
 	getPlayerStatsByDay,
+	getRegistrationsByDay,
 } = require('./stats');
 
 /**
@@ -225,7 +226,8 @@ async function getAdminStats() {
 	return {
 		gameStats: await calculateAdminStats(),
 		userStats: { PLAYER: await countPlayers() },
-		gamesByDay: await generateLast30DaysList(await getAdminStatsByDay()),
+		gamesByDay: generateLast30DaysList(await getAdminStatsByDay()),
+		registrationsByDay: generateLast30DaysList(await getRegistrationsByDay()),
 	};
 }
 
@@ -730,12 +732,13 @@ io.on('connection', async function (socket) {
 			socket.to('admin').emit('game-admin-list', { games: allGames });
 			socket.emit('game-admin-list', { games: allGames });
 
-			const adminStats = await getAdminStats();
-			const selfStats = await getPlayerStats(socket.user.id);
-			socket.to('admin').emit('stats', { stats: adminStats });
-			socket.emit('stats', {
-				stats: socket.user.role === 'ADMIN' ? adminStats : selfStats,
-			});
+			// TODO: check again
+			// const adminStats = await getAdminStats();
+			// const selfStats = await getPlayerStats(socket.user.id);
+			// socket.to('admin').emit('stats', { stats: adminStats });
+			// socket.emit('stats', {
+			// 	stats: socket.user.role === 'ADMIN' ? adminStats : selfStats,
+			// });
 		} catch (error) {
 			socket.emit('game-cancel-failed', { message: error.message });
 		}
@@ -769,12 +772,13 @@ io.on('connection', async function (socket) {
 			socket.to('admin').emit('game-admin-list', { games: allGames });
 			socket.emit('game-admin-list', { games: allGames });
 
-			const adminStats = await getAdminStats();
-			const playerStats = await getPlayerStats(socket.user.id);
-			socket.to('admin').emit('stats', { stats: adminStats });
-			socket.emit('stats', {
-				stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
-			});
+			// TODO: check again
+			// const adminStats = await getAdminStats();
+			// const playerStats = await getPlayerStats(socket.user.id);
+			// socket.to('admin').emit('stats', { stats: adminStats });
+			// socket.emit('stats', {
+			// 	stats: socket.user.role === 'ADMIN' ? adminStats : playerStats,
+			// });
 		} catch (error) {
 			socket.emit('game-delete-failed', { message: error.message });
 		}
