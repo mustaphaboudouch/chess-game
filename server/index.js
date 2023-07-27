@@ -185,8 +185,43 @@ async function isAllowedToPlay(userId) {
 	return countGames < 5;
 }
 
+async function getAdminGamesByStatus(status) {
+	const gamesWithUsername = [];
+	const games = await Game.find({ status });
+
+	for (const game of games) {
+		const player = await User.findByPk(game.playerId);
+		const opponent = await User.findByPk(game.opponentId);
+
+		gamesWithUsername.push({
+			...game.toObject(),
+			playerUsername: player?.username,
+			opponentUsername: opponent?.username,
+		});
+	}
+
+	return gamesWithUsername;
+}
+
+async function getAdminGames(statuses) {
+	const games = {};
+
+	for (const status of statuses) {
+		games[status] = await getAdminGamesByStatus(status);
+	}
+
+	return games;
+}
+
 io.on('connection', async function (socket) {
 	console.log(`🚀 ${socket.id} user connected successfully`);
+
+	/**
+	 * Join admins room
+	 */
+	if (socket.user.role === 'ADMIN') {
+		socket.join('admin');
+	}
 
 	/**
 	 * Get current game
@@ -203,9 +238,27 @@ io.on('connection', async function (socket) {
 		socket.join(currentGame._id.toString());
 		socket.emit('game-current', { game: currentGame });
 	}
+
+	/**
+	 * Get user on going games
+	 */
 	const games = await getOnGoingGames(socket.user);
 	socket.broadcast.emit('game-list', { games });
 	socket.emit('game-list', { games });
+
+	/**
+	 * Get all games (for admin)
+	 */
+	const user = await User.findByPk(socket.user.id);
+	if (user.role === 'ADMIN') {
+		const allGames = await getAdminGames([
+			'WAITING',
+			'PLAYING',
+			'DONE',
+			'CANCELED',
+		]);
+		socket.emit('game-admin-list', { games: allGames });
+	}
 
 	/**
 	 * Create new game
@@ -257,6 +310,12 @@ io.on('connection', async function (socket) {
 
 			socket.join(game._id.toString());
 			socket.emit('game-create-success', { game });
+
+			const allGames = await getAdminGames(['WAITING']);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			if (user.role === 'ADMIN') {
+				socket.emit('game-admin-list', { games: allGames });
+			}
 		} catch (error) {
 			socket.emit('game-create-failed', { message: error.message });
 		}
@@ -323,6 +382,12 @@ io.on('connection', async function (socket) {
 			socket.join(game._id.toString());
 			socket.to(game._id.toString()).emit('game-join-success', { game });
 			socket.emit('game-join-success', { game });
+
+			const allGames = await getAdminGames(['WAITING', 'PLAYING']);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			if (user.role === 'ADMIN') {
+				socket.emit('game-admin-list', { games: allGames });
+			}
 		} catch (error) {
 			socket.emit('game-join-failed', { message: error.message });
 		}
@@ -389,6 +454,12 @@ io.on('connection', async function (socket) {
 			socket.join(game._id.toString());
 			socket.to(game._id.toString()).emit('game-join-success', { game });
 			socket.emit('game-join-success', { game });
+
+			const allGames = await getAdminGames(['WAITING', 'PLAYING']);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			if (user.role === 'ADMIN') {
+				socket.emit('game-admin-list', { games: allGames });
+			}
 		} catch (error) {
 			socket.emit('game-join-failed', { message: error.message });
 		}
@@ -436,6 +507,13 @@ io.on('connection', async function (socket) {
 
 				socket.to(gameId).emit('game-checkmate', { game });
 				socket.emit('game-checkmate', { game });
+
+				const allGames = await getAdminGames(['PLAYING', 'DONE']);
+				socket.to('admin').emit('game-admin-list', { games: allGames });
+				if (user.role === 'ADMIN') {
+					socket.emit('game-admin-list', { games: allGames });
+				}
+
 				return;
 			}
 
@@ -450,6 +528,13 @@ io.on('connection', async function (socket) {
 
 				socket.to(gameId).emit('game-draw', { game });
 				socket.emit('game-draw', { game });
+
+				const allGames = await getAdminGames(['PLAYING', 'DONE']);
+				socket.to('admin').emit('game-admin-list', { games: allGames });
+				if (user.role === 'ADMIN') {
+					socket.emit('game-admin-list', { games: allGames });
+				}
+
 				return;
 			}
 
@@ -503,8 +588,75 @@ io.on('connection', async function (socket) {
 			socket.to(gameId).emit('game-quit-success');
 			socket.emit('game-quit-success');
 			socket.leave(gameId);
+
+			const allGames = await getAdminGames(['WAITING', 'PLAYING', 'CANCELED']);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			if (user.role === 'ADMIN') {
+				socket.emit('game-admin-list', { games: allGames });
+			}
 		} catch (error) {
 			socket.emit('game-quit-failed', { message: error.message });
+		}
+	});
+
+	/**
+	 * Admin: Cancel a game
+	 */
+	socket.on('game-cancel', async function ({ gameId }) {
+		try {
+			if (socket.user.role !== 'ADMIN') {
+				throw new Error('You are not allowed');
+			}
+
+			const game = await Game.findById(gameId);
+
+			if (!game) {
+				throw new Error('Game not found');
+			}
+
+			await Game.findByIdAndUpdate(gameId, {
+				status: 'CANCELED',
+			});
+
+			socket.to(gameId).emit('game-cancel-success');
+
+			const allGames = await getAdminGames(['WAITING', 'PLAYING', 'CANCELED']);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			socket.emit('game-admin-list', { games: allGames });
+		} catch (error) {
+			socket.emit('game-cancel-failed', { message: error.message });
+		}
+	});
+
+	/**
+	 * Admin: Delete a game
+	 */
+	socket.on('game-delete', async function ({ gameId }) {
+		try {
+			if (socket.user.role !== 'ADMIN') {
+				throw new Error('You are not allowed');
+			}
+
+			const game = await Game.findById(gameId);
+
+			if (!game) {
+				throw new Error('Game not found');
+			}
+
+			await Game.findByIdAndDelete(gameId);
+
+			socket.to(gameId).emit('game-delete-success');
+
+			const allGames = await getAdminGames([
+				'WAITING',
+				'PLAYING',
+				'DONE',
+				'CANCELED',
+			]);
+			socket.to('admin').emit('game-admin-list', { games: allGames });
+			socket.emit('game-admin-list', { games: allGames });
+		} catch (error) {
+			socket.emit('game-delete-failed', { message: error.message });
 		}
 	});
 
@@ -513,6 +665,11 @@ io.on('connection', async function (socket) {
 	 */
 	socket.on('disconnect', function () {
 		console.log(`💤 ${socket.id} user disconnected successfully`);
+
+		// Leave admins room
+		if (socket.user.role === 'ADMIN') {
+			socket.leave('admin');
+		}
 	});
 });
 
