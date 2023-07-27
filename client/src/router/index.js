@@ -6,6 +6,7 @@ import GameView from "../views/GameView.vue";
 import BoardView from "../views/BoardView.vue";
 import UsersView from "../views/UsersView.vue";
 import UserView from "../views/UserView.vue";
+import GamesView from "../views/GamesView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import SignInView from "../views/SignInView.vue";
 import SignUpView from "../views/SignUpView.vue";
@@ -51,6 +52,15 @@ const router = createRouter({
       path: "/users/:id",
       name: "user",
       component: UserView,
+      meta: {
+        isPrivate: true,
+        isAdmin: true
+      }
+    },
+    {
+      path: "/games",
+      name: "games",
+      component: GamesView,
       meta: {
         isPrivate: true,
         isAdmin: true

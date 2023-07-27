@@ -7,7 +7,13 @@ export const state = reactive({
   chess: new Chess(),
   stats: null,
   game: null,
-  games: []
+  games: [],
+  adminGames: {
+    WAITING: [],
+    PLAYING: [],
+    DONE: [],
+    CANCELED: []
+  }
 });
 
 const socket = io("http://localhost:3001", {
@@ -45,6 +51,11 @@ socket.on("connect_error", function (error) {
 /**
  * Game events
  */
+
+socket.on("game-admin-list", function ({ games }) {
+  console.log("game-admin-list", games);
+  state.adminGames = { ...state.adminGames, ...games };
+});
 
 socket.on("game-list", function ({ games }) {
   console.log("game-list", games);
@@ -92,14 +103,14 @@ socket.on("game-move-failed", function ({ game: newGame, message }) {
 });
 
 socket.on("game-quit-success", function () {
-  console.log("game-quit-failed");
+  console.log("game-quit-success");
   state.game = null;
   state.chess = new Chess();
   router.push("/game");
 });
 
-socket.on("game-quit-failed", function () {
-  console.log("game-quit-failed");
+socket.on("game-quit-failed", function ({ message }) {
+  console.log("game-quit-failed", message);
 });
 
 socket.on("game-checkmate", function ({ game: newGame }) {
@@ -112,6 +123,28 @@ socket.on("game-draw", function ({ game: newGame }) {
   console.log("game-draw");
   state.game = newGame;
   state.chess = new Chess(newGame.fen);
+});
+
+socket.on("game-cancel-success", function () {
+  console.log("game-cancel-success");
+  state.game = null;
+  state.chess = new Chess();
+  router.push("/game");
+});
+
+socket.on("game-cancel-failed", function ({ message }) {
+  console.log("game-cancel-failed", message);
+});
+
+socket.on("game-delete-success", function () {
+  console.log("game-delete-success");
+  state.game = null;
+  state.chess = new Chess();
+  router.push("/game");
+});
+
+socket.on("game-delete-failed", function ({ message }) {
+  console.log("game-delete-failed", message);
 });
 
 export default socket;
