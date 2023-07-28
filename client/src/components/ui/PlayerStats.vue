@@ -41,9 +41,9 @@ const gamesByDay = computed(function () {
         {{
           props.stats?.gameStats.PRIVATE + props.stats?.gameStats.PUBLIC === 0
             ? 0
-            : (props.stats?.gameStats.WIN /
+            : Math.round((props.stats?.gameStats.WIN /
                 (props.stats?.gameStats.PRIVATE + props.stats?.gameStats.PUBLIC)) *
-              100
+              100)
         }}
         %
       </h3>

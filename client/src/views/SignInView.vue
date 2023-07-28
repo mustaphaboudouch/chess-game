@@ -12,7 +12,7 @@ async function handleSubmit() {
 
 <template>
   <div class="max-w-xl m-auto px-8 py-6 rounded-xl" style="background-color: #202020">
-    <h1 class="text-2xl text-white font-medium mb-6">Sign In Page</h1>
+    <h1 class="text-2xl text-white font-medium mb-6">Connexion</h1>
 
     <form @submit.prevent="handleSubmit" class="flex flex-col gap-4">
       <div class="flex flex-col gap-1">
@@ -20,7 +20,7 @@ async function handleSubmit() {
         <input id="email" type="email" v-model="values.email" class="w-full px-4 py-2 rounded-md" />
       </div>
       <div class="flex flex-col gap-1">
-        <label for="password" style="color: #818181">Password</label>
+        <label for="password" style="color: #818181">Mot de passe</label>
         <input
           id="password"
           type="password"
