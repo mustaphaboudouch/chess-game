@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const Game = require('../models/game');
 
 /**
  * Get all users
@@ -28,7 +29,14 @@ async function getById(req, res) {
 			return res.status(404).json({ message: 'User not found' });
 		}
 
-		res.status(200).json(user);
+		const gamesCount = await Game.countDocuments({
+			$or: [{ playerId: user.id }, { opponentId: user.id }],
+		});
+
+		res.status(200).json({
+			...user.toJSON(),
+			gamesCount,
+		});
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}

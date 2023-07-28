@@ -19,8 +19,6 @@ onUnmounted(function () {
 </script>
 
 <template>
-  <h1>Dashboard Page</h1>
-
   <div v-if="user.role === 'ADMIN'">
     <AdminStats :stats="state.stats" />
   </div>

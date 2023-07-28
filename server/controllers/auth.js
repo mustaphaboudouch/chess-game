@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
+const Game = require('../models/game');
 const { buildToken } = require('../lib/token');
 
 /**
@@ -56,7 +57,14 @@ async function me(req, res) {
 			return res.status(404).json({ message: 'User not found' });
 		}
 
-		res.status(200).json(user);
+		const gamesCount = await Game.countDocuments({
+			$or: [{ playerId: user.id }, { opponentId: user.id }],
+		});
+
+		res.status(200).json({
+			...user.toJSON(),
+			gamesCount,
+		});
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -76,7 +84,14 @@ async function updateProfile(req, res) {
 		user.set({ username: req.body.username });
 		await user.save();
 
-		res.status(201).json(user);
+		const gamesCount = await Game.countDocuments({
+			$or: [{ playerId: user.id }, { opponentId: user.id }],
+		});
+
+		res.status(201).json({
+			...user.toJSON(),
+			gamesCount,
+		});
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}

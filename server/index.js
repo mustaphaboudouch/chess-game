@@ -119,11 +119,22 @@ app.use('/', userRouter);
  * Run socket server
  */
 
-async function getOnGoingGames(user) {
-	return Game.find({
+async function getOnGoingGames() {
+	const games = await Game.find({
 		status: 'WAITING',
 		visibility: 'PUBLIC',
 	});
+
+	const newGames = [];
+
+	for (const game of games) {
+		newGames.push({
+			...game.toObject(),
+			player: await User.findByPk(game.playerId),
+		});
+	}
+
+	return newGames;
 }
 
 async function updateScores(game) {

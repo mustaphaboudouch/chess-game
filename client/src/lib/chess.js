@@ -17,18 +17,18 @@ export function fenToArray(fen) {
 
   // Define an object for each piece type and its corresponding emoji
   const pieceEmojis = {
-    k: "♚",
-    q: "♛",
-    r: "♜",
-    b: "♝",
-    n: "♞",
-    p: "♟",
-    K: "♔",
-    Q: "♕",
-    R: "♖",
-    B: "♗",
-    N: "♘",
-    P: "♙"
+    k: "<i class='fa-solid fa-chess-king'></i>",
+    q: "<i class='fa-solid fa-chess-queen'></i>",
+    r: "<i class='fa-solid fa-chess-rook'></i>",
+    b: "<i class='fa-solid fa-chess-bishop'></i>",
+    n: "<i class='fa-solid fa-chess-knight'></i>",
+    p: "<i class='fa-solid fa-chess-pawn'></i>",
+    K: "<i class='fa-regular fa-chess-king'></i>",
+    Q: "<i class='fa-regular fa-chess-queen'></i>",
+    R: "<i class='fa-regular fa-chess-rook'></i>",
+    B: "<i class='fa-regular fa-chess-bishop'></i>",
+    N: "<i class='fa-regular fa-chess-knight'></i>",
+    P: "<i class='fa-regular fa-chess-pawn'></i>"
   };
 
   for (let rank of ranks) {

@@ -13,7 +13,7 @@ import SignUpView from "../views/SignUpView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  linkActiveClass: "active",
+  linkActiveClass: "text-white",
   routes: [
     {
       path: "/",

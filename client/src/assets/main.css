@@ -1,9 +1,13 @@
-/* @tailwind base;
+@tailwind base;
 @tailwind components;
-@tailwind utilities; */
+@tailwind utilities;
 
-.active {
-  font-weight: bold;
+.board .board__row:nth-child(odd) button:nth-child(even) {
+  background-color: #769656;
+}
+
+.board .board__row:nth-child(even) button:nth-child(odd) {
+  background-color: #769656;
 }
 
 .cell-selected {

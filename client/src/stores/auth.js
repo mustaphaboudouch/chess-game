@@ -2,6 +2,7 @@ import { onMounted, ref } from "vue";
 import { defineStore } from "pinia";
 import axios from "../lib/axios";
 import router from "../router";
+import { toast } from "vue3-toastify";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
@@ -19,7 +20,10 @@ export const useAuthStore = defineStore("auth", () => {
       localStorage.setItem("token", response.data.token);
       location.reload();
     } catch (error) {
-      console.log(error);
+      toast.error(error.message, {
+        autoClose: 3000,
+        position: "bottom-center"
+      });
     }
   }
 
@@ -29,7 +33,10 @@ export const useAuthStore = defineStore("auth", () => {
       localStorage.setItem("token", response.data.token);
       location.reload();
     } catch (error) {
-      console.log(error.message);
+      toast.error(error.message, {
+        autoClose: 3000,
+        position: "bottom-center"
+      });
     }
   }
 

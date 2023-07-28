@@ -104,32 +104,91 @@ function onChoosePiece(piece) {
 </script>
 
 <template>
-  <pre>{{ JSON.stringify(props.game, null, 2) }}</pre>
-
-  <div v-if="values.showPromotionModal">
-    <form @submit.prevent="onChoosePiece">
-      <button @click="onChoosePiece('q')">Q</button>
-      <button @click="onChoosePiece('r')">R</button>
-      <button @click="onChoosePiece('b')">B</button>
-      <button @click="onChoosePiece('n')">N</button>
+  <div
+    v-if="values.showPromotionModal"
+    class="fixed bg-black/50 inset-0 z-40 flex items-center justify-center"
+  >
+    <form
+      @submit.prevent="onChoosePiece"
+      class="bg-white px-12 py-8 w-[600px] rounded-xl z-50 flex justify-between"
+    >
+      <button
+        @click="onChoosePiece('q')"
+        class="flex flex-col items-center w-20 py-4 rounded-xl"
+        style="background-color: #68a741"
+      >
+        <i class="fa-solid fa-chess-queen text-5xl"></i>
+        <span class="text-sm">Dame</span>
+      </button>
+      <button
+        @click="onChoosePiece('r')"
+        class="flex flex-col items-center w-20 py-4 rounded-xl"
+        style="background-color: #68a741"
+      >
+        <i class="fa-solid fa-chess-rook text-5xl"></i>
+        <span class="text-sm">Tour</span>
+      </button>
+      <button
+        @click="onChoosePiece('b')"
+        class="flex flex-col items-center w-20 py-4 rounded-xl"
+        style="background-color: #68a741"
+      >
+        <i class="fa-solid fa-chess-bishop text-5xl"></i>
+        <span class="text-sm">Fou</span>
+      </button>
+      <button
+        @click="onChoosePiece('n')"
+        class="flex flex-col items-center w-20 py-4 rounded-xl"
+        style="background-color: #68a741"
+      >
+        <i class="fa-solid fa-chess-knight text-5xl"></i>
+        <span class="text-sm">Cavalier</span>
+      </button>
     </form>
   </div>
 
-  <div v-for="(row, index) in board" :key="index" style="display: flex">
-    <button
-      v-for="(cell, index) in row"
-      :key="index"
-      @click="onClickPiece(cell.piece, cell.position)"
-      :class="[
-        {
-          'cell-selected': cell.position === values.selectedPiece?.position,
-          'cell-move': values.legalMoves.includes(cell.position)
-        },
-        ''
-      ]"
-      style="width: 50px; height: 50px; border: 1px solid #000000; font-size: 30px"
+  <div class="flex justify-center">
+    <div
+      class="inline-block text-center text-sm text-white mt-8 px-10 py-2"
+      style="background-color: #202020"
     >
-      {{ cell.emoji }}
-    </button>
+      Au
+      <span class="font-semibold">{{ state.chess.turn() === "w" ? "BLANC" : "NOIR" }}</span>
+      de jouer
+    </div>
+  </div>
+
+  <div class="flex justify-center mt-4">
+    <div
+      :class="
+        user.id === props.game.opponentId ? 'inline-block board rotate-180' : 'inline-block board'
+      "
+      style="background-color: #eeeed2"
+    >
+      <div v-for="(row, index) in board" :key="index" class="board__row flex">
+        <button
+          v-for="(cell, index) in row"
+          :key="index"
+          @click="onClickPiece(cell.piece, cell.position)"
+          :class="
+            user.id === props.game.opponentId
+              ? 'relative w-20 h-20 text-4xl flex items-center justify-center rotate-180'
+              : 'relative w-20 h-20 text-4xl flex items-center justify-center'
+          "
+          style="color: #202020"
+        >
+          <span
+            v-if="cell.position === values.selectedPiece?.position"
+            class="absolute w-full h-full bg-yellow-500/50"
+          ></span>
+          <span
+            v-if="values.legalMoves.includes(cell.position)"
+            class="absolute w-4 h-4 rounded-full bg-black/50"
+          ></span>
+
+          <span class="relative" v-html="cell.emoji" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
