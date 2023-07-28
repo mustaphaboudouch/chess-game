@@ -10,6 +10,7 @@ async function getAll(req, res) {
 			where: {
 				role: 'PLAYER',
 			},
+			attributes: { exclude: ['password'] },
 		});
 
 		res.status(200).json(users);
@@ -23,7 +24,9 @@ async function getAll(req, res) {
  */
 async function getById(req, res) {
 	try {
-		const user = await User.findByPk(req.params.id);
+		const user = await User.findByPk(req.params.id, {
+			attributes: { exclude: ['password'] },
+		});
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -59,6 +62,7 @@ async function remove(req, res) {
 			where: {
 				role: 'PLAYER',
 			},
+			attributes: { exclude: ['password'] },
 		});
 
 		res.status(200).json(users);

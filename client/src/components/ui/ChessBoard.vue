@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../../stores/auth";
-import socket, { state, updateBoard } from "../../socket";
+import socket, { state, updateBoard } from "../../stores/socket";
 import { fenToArray, cleanPosition } from "../../lib/chess";
 import { Chess } from "chess.js";
 

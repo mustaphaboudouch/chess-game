@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import dayjs from "dayjs";
-import socket, { state } from "../socket";
+import socket, { state } from "../stores/socket";
 
 const status = ref("WAITING");
 

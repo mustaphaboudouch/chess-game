@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
-import socket, { state } from "../socket";
+import socket, { state } from "../stores/socket";
 import { useAuthStore } from "../stores/auth";
 import AdminStats from "../components/ui/AdminStats.vue";
 import PlayerStats from "../components/ui/PlayerStats.vue";

@@ -1,7 +1,7 @@
 import { reactive } from "vue";
 import { io } from "socket.io-client";
 import { Chess } from "chess.js";
-import router from "./router";
+import router from "../router";
 import { toast } from "vue3-toastify";
 
 export const state = reactive({

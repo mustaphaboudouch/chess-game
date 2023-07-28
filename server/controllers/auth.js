@@ -17,7 +17,7 @@ async function signUp(req, res) {
 		});
 
 		const token = buildToken(user);
-		res.status(201).json({ token, user });
+		res.status(201).json({ token });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -40,7 +40,7 @@ async function signIn(req, res) {
 		}
 
 		const token = buildToken(user);
-		res.status(200).json({ token, user });
+		res.status(200).json({ token });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -51,7 +51,9 @@ async function signIn(req, res) {
  */
 async function me(req, res) {
 	try {
-		const user = await User.findByPk(res.locals.user.id);
+		const user = await User.findByPk(res.locals.user.id, {
+			attributes: { exclude: ['password'] },
+		});
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
@@ -75,7 +77,9 @@ async function me(req, res) {
  */
 async function updateProfile(req, res) {
 	try {
-		const user = await User.findByPk(res.locals.user.id);
+		const user = await User.findByPk(res.locals.user.id, {
+			attributes: { exclude: ['password'] },
+		});
 
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });

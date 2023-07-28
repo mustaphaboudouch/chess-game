@@ -9,7 +9,7 @@
   <p align="center">
     Real-time turn-based multiplayer chess game using Node.js, Vue.js and MongoDB.
     <br />
-    <a href="https://github.com/mustaphaboudouch/chess-game">
+    <a href="https://main--velvety-gumption-38351d.netlify.app/">
       View demo »
     </a>
   </p>

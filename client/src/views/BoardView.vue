@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted } from "vue";
 import { RouterLink } from "vue-router";
 import { storeToRefs } from "pinia";
-import socket, { state } from "../socket";
+import socket, { state } from "../stores/socket";
 import ChessBoard from "../components/ui/ChessBoard.vue";
 import { useAuthStore } from "../stores/auth";
 

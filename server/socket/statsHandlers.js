@@ -1,9 +1,12 @@
 const { Op } = require('sequelize');
-const { formatDate } = require('./lib/date');
-const sequelize = require('./lib/sequelize');
-const Game = require('./models/game');
-const User = require('./models/user');
+const { formatDate } = require('../lib/date');
+const sequelize = require('../lib/sequelize');
+const User = require('../models/user');
+const Game = require('../models/game');
 
+/**
+ * Calculate admin stats
+ */
 async function calculateAdminStats() {
 	const stats = await Game.aggregate([
 		{
@@ -72,6 +75,9 @@ async function calculateAdminStats() {
 		: stats[0];
 }
 
+/**
+ * Calculate player stats
+ */
 async function calculatePlayerStats(userId) {
 	const stats = await Game.aggregate([
 		{
@@ -157,6 +163,9 @@ async function calculatePlayerStats(userId) {
 		: stats[0];
 }
 
+/**
+ * Calculate admin games day by day
+ */
 async function getAdminStatsByDay() {
 	const startDate = new Date();
 	startDate.setDate(startDate.getDate() - 30);
@@ -179,6 +188,9 @@ async function getAdminStatsByDay() {
 	]);
 }
 
+/**
+ * Calculate player games day by day
+ */
 async function getPlayerStatsByDay(userId) {
 	const startDate = new Date();
 	startDate.setDate(startDate.getDate() - 30);
@@ -202,6 +214,9 @@ async function getPlayerStatsByDay(userId) {
 	]);
 }
 
+/**
+ * Format stats to get last 30 days
+ */
 function getLast30Days() {
 	const now = new Date();
 	const dates = [];
@@ -216,7 +231,6 @@ function getLast30Days() {
 	});
 	return dates;
 }
-
 function generateLast30DaysList(gamesCountsByDate) {
 	const thirtyDaysList = [];
 
@@ -232,6 +246,9 @@ function generateLast30DaysList(gamesCountsByDate) {
 	return thirtyDaysList;
 }
 
+/**
+ * Count all players
+ */
 async function countPlayers() {
 	return User.count({
 		where: {
@@ -240,6 +257,9 @@ async function countPlayers() {
 	});
 }
 
+/**
+ * Count registration day by day
+ */
 async function getRegistrationsByDay() {
 	const thirtyDaysAgo = new Date();
 	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -264,12 +284,36 @@ async function getRegistrationsByDay() {
 	return playerSubscriptionCount;
 }
 
-module.exports = {
-	calculateAdminStats,
-	calculatePlayerStats,
-	getAdminStatsByDay,
-	getPlayerStatsByDay,
-	generateLast30DaysList,
-	countPlayers,
-	getRegistrationsByDay,
+/**
+ * Format admin stats
+ */
+async function getAdminStats() {
+	return {
+		gameStats: await calculateAdminStats(),
+		userStats: { PLAYER: await countPlayers() },
+		gamesByDay: generateLast30DaysList(await getAdminStatsByDay()),
+		registrationsByDay: generateLast30DaysList(await getRegistrationsByDay()),
+	};
+}
+
+/**
+ * Format player stats
+ */
+async function getPlayerStats(userId) {
+	return {
+		gameStats: await calculatePlayerStats(userId),
+		gamesByDay: generateLast30DaysList(await getPlayerStatsByDay(userId)),
+	};
+}
+
+module.exports = async function (socket) {
+	/**
+	 * Get user stats
+	 */
+	socket.emit('stats', {
+		stats:
+			socket.user.role === 'ADMIN'
+				? await getAdminStats()
+				: await getPlayerStats(socket.user.id),
+	});
 };

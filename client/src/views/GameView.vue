@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
-import socket, { state } from "../socket";
+import socket, { state } from "../stores/socket";
 import { RouterLink } from "vue-router";
 import dayjs from "dayjs";
 
