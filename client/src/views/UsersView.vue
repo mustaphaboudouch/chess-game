@@ -20,6 +20,9 @@ onMounted(async function () {
 
 async function onDeleteUser(userId) {
   try {
+    const isConfirmed = window.confirm("Voulez vous supprimer cet utilisateur ?");
+    if (!isConfirmed) return;
+
     const response = await axios.delete(`users/${userId}`);
     users.value = response.data;
   } catch (error) {
@@ -39,8 +42,8 @@ async function onDeleteUser(userId) {
       class="text-sm uppercase font-medium"
       style="color: #818181; border-bottom: 1px solid #282828"
     >
-      <td class="px-6 py-5">Username</td>
-      <td class="px-6 py-5">Addresse e-mail</td>
+      <td class="px-6 py-5">Nom d'utilisateur</td>
+      <td class="px-6 py-5">Adresse e-mail</td>
       <td class="px-6 py-5">Score</td>
       <td></td>
     </tr>

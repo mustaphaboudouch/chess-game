@@ -85,7 +85,9 @@ async function onSubscribe() {
     <h3 class="text-lg text-white mb-3 font-medium">Modifier profil</h3>
     <form @submit.prevent="onUpdateProfile">
       <div>
-        <label for="username" class="block text-sm mb-2" style="color: #818181">Username</label>
+        <label for="username" class="block text-sm mb-2" style="color: #818181"
+          >Nom d'utilisateur</label
+        >
         <input id="username" type="text" v-model="username" class="w-full p-3 rounded-md" />
       </div>
       <div class="text-right">
@@ -101,19 +103,21 @@ async function onSubscribe() {
   </div>
 
   <div v-if="user" class="px-12 py-10 gap-12 rounded-2xl mt-6" style="background-color: #202020">
-    <h3 class="text-lg text-white mb-3 font-medium">Subscription</h3>
-    <p class="block text-sm mb-2" style="color: #818181">
-      Lorem ipsum, dolor sit amet consectetur adipisicing elit. Est, vitae fugit? Praesentium illum
-      labore perferendis aperiam quisquam. Veniam placeat, aut assumenda, quidem velit aspernatur
-      voluptates voluptate sed pariatur numquam dignissimos.
+    <h3 class="text-lg text-white mb-3 font-medium">Abonnement</h3>
+    <p v-if="plan === 'FREE'" class="block text-sm mb-2" style="color: #818181">
+      Souscrivez à un abonnement PRO pour avoir accès à un nombre illimité de parties par jour sur
+      Gambito !
+    </p>
+    <p v-else class="block text-sm mb-2" style="color: #818181">
+      Cliquez sur le button pour gérer votre abonnement.
     </p>
     <button
       @click="onSubscribe"
       class="text-white uppercase text-sm font-medium py-3 px-4 rounded-md mt-2"
       style="background-color: #68a741"
     >
-      <span v-if="plan === 'FREE'">Upgrade to PRO</span>
-      <span v-else>Manage Subscription</span>
+      <span v-if="plan === 'FREE'">S'abonner à PRO</span>
+      <span v-else>Gérer l'abonnement</span>
     </button>
   </div>
 </template>

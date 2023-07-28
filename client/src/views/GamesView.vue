@@ -14,10 +14,16 @@ onUnmounted(function () {
 });
 
 function onCancelGame(gameId) {
+  const isConfirmed = window.confirm("Voulez vous annuler cette partie ?");
+  if (!isConfirmed) return;
+
   socket.emit("game-cancel", { gameId });
 }
 
 function onDeleteGame(gameId) {
+  const isConfirmed = window.confirm("Voulez vous supprimer cette partie ?");
+  if (!isConfirmed) return;
+
   socket.emit("game-delete", { gameId });
 }
 </script>

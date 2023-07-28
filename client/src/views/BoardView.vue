@@ -18,6 +18,9 @@ onUnmounted(function () {
 });
 
 function onQuitGame() {
+  const isConfirmed = window.confirm("Voulez vous quitter cette partie ?");
+  if (!isConfirmed) return;
+
   socket.emit("game-quit", { gameId: state.game._id });
 }
 </script>

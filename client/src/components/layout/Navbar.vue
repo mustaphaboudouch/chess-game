@@ -35,7 +35,7 @@ const { user } = storeToRefs(authStore);
             class="inline-block text-white uppercase text-xs font-medium py-2 px-4 rounded-md mt-2"
             style="background-color: #68a741"
           >
-            Se déconnecter
+            Déconnexion
           </button>
         </template>
         <template v-if="!user">
