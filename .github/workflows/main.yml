@@ -15,5 +15,6 @@ jobs:
       - name: Run Tests
         run: |
           cd server 
+          cp .env.ci .env
           npm install 
           npm test
